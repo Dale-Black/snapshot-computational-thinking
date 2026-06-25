@@ -3,8 +3,16 @@
 
 #> [frontmatter]
 #> chapter = "1"
-#> section = "2"
-#> title = "Abstraction"
+#> license_url = "https://github.com/mitmath/computational-thinking/blob/Fall23/LICENSE.md"
+#> section = "9"
+#> title = "Taking Advantage of Structure"
+#> tags = ["lecture", "module1", "type", "matrix", "structure", "sparse", "interactive"]
+#> license = "MIT"
+#> description = "A diagonal matrix is mostly zeros; a multiplication table is mostly redundant. Spotting structure lets you store and compute with far less. See it live in your browser."
+#> 
+#>     [[frontmatter.author]]
+#>     name = "MIT mathematics"
+#>     url = "https://github.com/mitmath"
 
 using Markdown
 using InteractiveUtils
@@ -21,98 +29,160 @@ macro bind(def, element)
     #! format: on
 end
 
-# ╔═╡ ab000002-0000-4000-8000-000000000002
+# ╔═╡ 9c000010-0000-4000-8000-000000000010
 begin
-	using PlutoUI
-	using WasmMakie
+    using PlutoUI, WasmMakie
 end
 
-# ╔═╡ ab000003-0000-4000-8000-000000000003
+# ╔═╡ 9c000001-0000-4000-8000-000000000001
+md"""
+# Taking Advantage of Structure
+
+A list of a million numbers that are all `0` except one isn't really a million numbers
+of information — it's *one position*. A diagonal matrix is "mostly zeros". A
+multiplication table looks big but is built from just one row and one column. The art
+of scientific computing is **spotting the structure** so you can store and compute with
+far less. Below, every kind of structure is shown as an image — drag the sliders and
+watch it.
+"""
+
+# ╔═╡ 9c000011-0000-4000-8000-000000000011
 PlutoUI.TableOfContents(aside = true)
 
-# ╔═╡ ab000001-0000-4000-8000-000000000001
-md"""
-# Abstraction
-
-Abstraction is the opposite of _specialization_. A **specialized** operation cares
-about the exact thing it works on; an **abstract** one steps back and works on a
-_shape_ of data, no matter what's inside.
-
-This is a WebAssembly-native reimagining of MIT's _Computational Thinking_ lesson:
-the figures below are live [WasmMakie](https://github.com/GroupTherapyOrg/WasmMakie.jl)
-islands — drag the sliders and they recompute in your browser, no server.
-"""
-
-# ╔═╡ ab000004-0000-4000-8000-000000000004
+# ╔═╡ 9c000006-0000-4000-8000-000000000006
 begin
-	# WasmMakie display helper — takes a FLAT, column-major vector + the (nr, nc)
-	# shape and renders it as an image. We never build a Matrix literal (those
-	# trap inside wasm kernels); a gray value v is shown as the colour (v, v, v).
-	function gray_figure(vals::Vector{Float64}, nr::Int, nc::Int; px::Int = 300)
-		pix = Vector{NTuple{4,Float64}}(undef, nr * nc)
-		for k in 1:(nr * nc)
-			v = vals[k]
-			pix[k] = (v, v, v, 1.0)
-		end
-		fig = Figure(size = (px, max(40, round(Int, px * nr / nc))))
-		ax = Axis(fig[1, 1])
-		hidedecorations!(ax)
-		hidespines!(ax)
-		image!(ax, (0.0, Float64(nc)), (0.0, Float64(nr)), pix,
-		       Int64(nc), Int64(nr); interpolate = false)
-		fig
-	end
+    # WasmMakie grayscale helper: a FLAT, column-major Vector{Float64} of length nr*nc,
+    # row 1 drawn at the top. (No Matrix literals — they trap inside wasm kernels.)
+    function gray_figure(vals::Vector{Float64}, nr::Int, nc::Int; px::Int = 320)
+        pix = Vector{NTuple{4,Float64}}(undef, nr * nc)
+        for k in 1:(nr * nc)
+            v = vals[k]
+            pix[k] = (v, v, v, 1.0)
+        end
+        fig = Figure(size = (px, max(40, round(Int, px * nr / nc))))
+        ax = Axis(fig[1, 1])
+        hidedecorations!(ax)
+        hidespines!(ax)
+        image!(ax, (0.0, Float64(nc)), (0.0, Float64(nr)), pix,
+               Int64(nc), Int64(nr); interpolate = false)
+        fig
+    end
 end
 
-# ╔═╡ ab000005-0000-4000-8000-000000000005
-# ONE function, ANY element type — that is abstraction. It drops `new` into a
-# flat (column-major) grid at row i, column j, without caring what `new` is.
-function place(new, grid::Vector, i, j, nrows)
-	out = copy(grid)
-	out[(j - 1) * nrows + i] = new
-	return out
+# ╔═╡ 9c000002-0000-4000-8000-000000000002
+md"""
+## A one-hot vector
+
+The simplest structure: a vector that is `0` everywhere except a single `1`. Whatever
+its length, all you need to know is *where* the 1 is. Below it's drawn as a strip of
+cells (white = the hot entry).
+
+length n = $(@bind n9 Slider(4:1:24; default = 12, show_value = true))
+
+hot position k = $(@bind k9 Slider(1:24; default = 4, show_value = true))
+"""
+
+# ╔═╡ 9c000007-0000-4000-8000-000000000007
+let
+    nn = n9
+    kk = k9
+    kk > nn && (kk = nn)
+    vals = Vector{Float64}(undef, nn)
+    for t in 1:nn
+        vals[t] = 0.12
+    end
+    vals[kk] = 0.97
+    gray_figure(vals, 1, nn; px = 420)
 end
 
-# ╔═╡ ab000006-0000-4000-8000-000000000006
+# ╔═╡ 9c000003-0000-4000-8000-000000000003
 md"""
-## The same operation, on different types
+## Diagonal matrices
 
-`place` doesn't know or care what it's placing. Move the sliders — the **same**
-function fills a cell in a grid of numbers _and_ a grid of pixels.
+A **diagonal** matrix is `0` off the diagonal. An $n\times n$ matrix has $n^2$ entries,
+but a diagonal one is fully described by just $n$ numbers — so Julia's `Diagonal` type
+*stores only the diagonal* and skips the zeros entirely. Look for structure where it exists!
 
-row $(@bind ai Slider(1:3; default = 1, show_value = true))
-column $(@bind aj Slider(1:4; default = 1, show_value = true))
+size n = $(@bind nd Slider(4:1:18; default = 9, show_value = true))
 """
 
-# ╔═╡ ab000007-0000-4000-8000-000000000007
-# numbers: a flat Int grid with a 5 dropped in (shown column-major).
-place(5, fill(1, 12), ai, aj, 3)
+# ╔═╡ 9c000008-0000-4000-8000-000000000008
+let
+    m = nd
+    vals = Vector{Float64}(undef, m * m)
+    for i in 1:m
+        for j in 1:m
+            vals[j + (m - i) * m] = (i == j) ? 0.92 : 0.12
+        end
+    end
+    gray_figure(vals, m, m; px = 300)
+end
 
-# ╔═╡ ab000008-0000-4000-8000-000000000008
-# pixels: the SAME `place`, now on a gray grid — a black square at (row, col).
-gray_figure(place(0.0, fill(0.85, 12), ai, aj, 3), 3, 4)
-
-# ╔═╡ ab000009-0000-4000-8000-000000000009
+# ╔═╡ 9c000004-0000-4000-8000-000000000004
 md"""
-## One more type — pick a fill
+## Sparse matrices
 
-Still the same idea: choose a shade and we fill the whole grid with it, then drop
-a marker. The operation is abstract over _what_ a "value" even is.
+A **sparse** matrix is *mostly* zeros — not necessarily on the diagonal, just few and
+far between. Instead of every entry, you store only the handful of nonzero `(row, col,
+value)` triples. Slide the density up and watch the (deterministic) scatter of nonzeros
+fill in; at low density there's almost nothing to store.
 
-shade $(@bind shade Select([0.85 => "light", 0.5 => "mid", 0.2 => "dark"]))
+nonzero density = $(@bind dens Slider(0.0:0.05:0.6; default = 0.18, show_value = true))
 """
 
-# ╔═╡ ab000010-0000-4000-8000-000000000010
-gray_figure(place(0.0, fill(shade, 12), ai, aj, 3), 3, 4)
+# ╔═╡ 9c000009-0000-4000-8000-000000000009
+let
+    m = 16
+    vals = Vector{Float64}(undef, m * m)
+    thr = dens * 17.0
+    for i in 1:m
+        for j in 1:m
+            on = ((i * 7 + j * 13) % 17) < thr
+            vals[j + (m - i) * m] = on ? 0.9 : 0.08
+        end
+    end
+    gray_figure(vals, m, m; px = 300)
+end
 
-# ╔═╡ ab00000b-0000-4000-8000-00000000000b
+# ╔═╡ 9c000005-0000-4000-8000-000000000005
 md"""
-## Why it matters
+## Hidden structure: a multiplication table
 
-We wrote `place` **once** and it worked for integers and for pixels — we never
-specialized it to a type. That's the whole game: a language that lets you operate
-at the level where the operation _makes sense_, and abstract away the rest.
+This one has **no zeros at all**, yet it's still highly structured. Entry $(i, j)$ is
+just $i \times j$ — so the whole $n \times n$ grid is rebuilt from a single row and a
+single column ($2n$ numbers, not $n^2$). That's **low rank**: a smooth, redundant pattern
+hiding in what looks like a full matrix.
+
+size n = $(@bind nm Slider(4:1:18; default = 10, show_value = true))
 """
+
+# ╔═╡ 9c00000a-0000-4000-8000-00000000000a
+let
+    m = nm
+    vals = Vector{Float64}(undef, m * m)
+    denom = Float64(m * m)
+    for i in 1:m
+        for j in 1:m
+            vals[j + (m - i) * m] = (i * j) / denom
+        end
+    end
+    gray_figure(vals, m, m; px = 300)
+end
+
+# ╔═╡ 9c00000b-0000-4000-8000-00000000000b
+md"""
+# Summary
+
+- **Structure** is information you *don't* have to store. A one-hot vector is a single
+  position; a diagonal matrix is $n$ numbers, not $n^2$.
+- **Sparse** matrices keep only their nonzeros; **low-rank** ones (like a multiplication
+  table) rebuild a whole grid from a row and a column.
+- In Julia these are real *types* (`Diagonal`, `SparseMatrixCSC`, …) that store the
+  compact form and run the fast algorithm automatically — "look for structure where it
+  exists".
+
+Every image above is a live WebAssembly island, rebuilt as you drag the sliders.
+""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -365,16 +435,18 @@ version = "1.64.0+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─ab000003-0000-4000-8000-000000000003
-# ╟─ab000001-0000-4000-8000-000000000001
-# ╠═ab000005-0000-4000-8000-000000000005
-# ╟─ab000006-0000-4000-8000-000000000006
-# ╠═ab000007-0000-4000-8000-000000000007
-# ╠═ab000008-0000-4000-8000-000000000008
-# ╟─ab000009-0000-4000-8000-000000000009
-# ╠═ab000010-0000-4000-8000-000000000010
-# ╟─ab00000b-0000-4000-8000-00000000000b
-# ╟─ab000002-0000-4000-8000-000000000002
-# ╟─ab000004-0000-4000-8000-000000000004
+# ╟─9c000001-0000-4000-8000-000000000001
+# ╠═9c000010-0000-4000-8000-000000000010
+# ╠═9c000011-0000-4000-8000-000000000011
+# ╠═9c000006-0000-4000-8000-000000000006
+# ╟─9c000002-0000-4000-8000-000000000002
+# ╠═9c000007-0000-4000-8000-000000000007
+# ╟─9c000003-0000-4000-8000-000000000003
+# ╠═9c000008-0000-4000-8000-000000000008
+# ╟─9c000004-0000-4000-8000-000000000004
+# ╠═9c000009-0000-4000-8000-000000000009
+# ╟─9c000005-0000-4000-8000-000000000005
+# ╠═9c00000a-0000-4000-8000-00000000000a
+# ╟─9c00000b-0000-4000-8000-00000000000b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

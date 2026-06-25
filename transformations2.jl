@@ -3,8 +3,16 @@
 
 #> [frontmatter]
 #> chapter = "1"
-#> section = "2"
-#> title = "Abstraction"
+#> license_url = "https://github.com/mitmath/computational-thinking/blob/Fall23/LICENSE.md"
+#> section = "5"
+#> title = "Transformations II: Composability, Linearity and Nonlinearity"
+#> tags = ["lecture", "module1", "transformation", "matrix", "linear algebra", "nonlinear", "interactive"]
+#> license = "MIT"
+#> description = "What does a 2×2 matrix actually DO? Drag its four numbers and watch a grid bend — lines stay lines for a linear map, and curve once you add nonlinearity. Live in your browser."
+#> 
+#>     [[frontmatter.author]]
+#>     name = "MIT mathematics"
+#>     url = "https://github.com/mitmath"
 
 using Markdown
 using InteractiveUtils
@@ -21,98 +29,156 @@ macro bind(def, element)
     #! format: on
 end
 
-# ╔═╡ ab000002-0000-4000-8000-000000000002
+# ╔═╡ 75000010-0000-4000-8000-000000000010
 begin
-	using PlutoUI
-	using WasmMakie
+    using PlutoUI, WasmMakie
 end
 
-# ╔═╡ ab000003-0000-4000-8000-000000000003
+# ╔═╡ 75000001-0000-4000-8000-000000000001
+md"""
+# Transformations II: Composability, Linearity and Nonlinearity
+
+In the original lecture you grab a "scrubbable" 2×2 matrix and watch it warp a photo
+of Philip the corgi. Loading a photo isn't possible inside a WebAssembly island, so
+here we warp the next best thing — a **grid** — which actually makes the mathematics
+*clearer*: you can see exactly where every point goes.
+
+Everything below runs in your browser. Drag the sliders and the grid bends live.
+"""
+
+# ╔═╡ 75000011-0000-4000-8000-000000000011
 PlutoUI.TableOfContents(aside = true)
 
-# ╔═╡ ab000001-0000-4000-8000-000000000001
+# ╔═╡ 75000002-0000-4000-8000-000000000002
 md"""
-# Abstraction
+## A linear map *is* a 2×2 matrix
 
-Abstraction is the opposite of _specialization_. A **specialized** operation cares
-about the exact thing it works on; an **abstract** one steps back and works on a
-_shape_ of data, no matter what's inside.
+A linear transformation sends the point $(x, y)$ to
 
-This is a WebAssembly-native reimagining of MIT's _Computational Thinking_ lesson:
-the figures below are live [WasmMakie](https://github.com/GroupTherapyOrg/WasmMakie.jl)
-islands — drag the sliders and they recompute in your browser, no server.
+$$\begin{pmatrix} a & b \\ c & d \end{pmatrix}\begin{pmatrix} x \\ y \end{pmatrix}
+= \begin{pmatrix} a\,x + b\,y \\ c\,x + d\,y \end{pmatrix}.$$
+
+Drag the four numbers of the matrix. The light blue lines are a grid being mapped;
+the two bold lines are where the basis vectors $e_1 = (1,0)$ and $e_2 = (0,1)$ land —
+they are exactly the **columns** of the matrix.
 """
 
-# ╔═╡ ab000004-0000-4000-8000-000000000004
+# ╔═╡ 75000003-0000-4000-8000-000000000003
+md"""
+| | |
+|:--:|:--:|
+| a = $(@bind a Slider(-2.0:0.1:2.0; default = 1.0, show_value = true)) | b = $(@bind b Slider(-2.0:0.1:2.0; default = 0.0, show_value = true)) |
+| c = $(@bind c Slider(-2.0:0.1:2.0; default = 0.0, show_value = true)) | d = $(@bind d Slider(-2.0:0.1:2.0; default = 1.0, show_value = true)) |
+"""
+
+# ╔═╡ 75000006-0000-4000-8000-000000000006
 begin
-	# WasmMakie display helper — takes a FLAT, column-major vector + the (nr, nc)
-	# shape and renders it as an image. We never build a Matrix literal (those
-	# trap inside wasm kernels); a gray value v is shown as the colour (v, v, v).
-	function gray_figure(vals::Vector{Float64}, nr::Int, nc::Int; px::Int = 300)
-		pix = Vector{NTuple{4,Float64}}(undef, nr * nc)
-		for k in 1:(nr * nc)
-			v = vals[k]
-			pix[k] = (v, v, v, 1.0)
-		end
-		fig = Figure(size = (px, max(40, round(Int, px * nr / nc))))
-		ax = Axis(fig[1, 1])
-		hidedecorations!(ax)
-		hidespines!(ax)
-		image!(ax, (0.0, Float64(nc)), (0.0, Float64(nr)), pix,
-		       Int64(nc), Int64(nr); interpolate = false)
-		fig
-	end
+    # Draw a square grid of lines after the point map
+    #   (x, y) ↦ (a·x + b·y + nl·sin(3y),  c·x + d·y + nl·sin(3x)).
+    # nl = 0 gives a pure LINEAR map (straight lines stay straight); nl > 0 adds a
+    # nonlinear wobble so straight lines bend. Pure integer loops + lines!, the
+    # wasm-stable WasmMakie path (same as the Newton notebook).
+    function draw_map(a, b, c, d, nl)
+        span = 1.5
+        nlines = 7
+        samples = 40
+        fig = Figure(size = (430, 430))
+        ax = Axis(fig[1, 1])
+        # vertical grid lines (x = const), sampled along y
+        for gi in 0:nlines
+            xv = -span + 2.0 * span * gi / nlines
+            xs = Float64[]
+            ys = Float64[]
+            for k in 0:samples
+                yv = -span + 2.0 * span * k / samples
+                push!(xs, a * xv + b * yv + nl * sin(3.0 * yv))
+                push!(ys, c * xv + d * yv + nl * sin(3.0 * xv))
+            end
+            lines!(ax, xs, ys)
+        end
+        # horizontal grid lines (y = const), sampled along x
+        for gi in 0:nlines
+            yv = -span + 2.0 * span * gi / nlines
+            xs = Float64[]
+            ys = Float64[]
+            for k in 0:samples
+                xv = -span + 2.0 * span * k / samples
+                push!(xs, a * xv + b * yv + nl * sin(3.0 * yv))
+                push!(ys, c * xv + d * yv + nl * sin(3.0 * xv))
+            end
+            lines!(ax, xs, ys)
+        end
+        # images of the basis vectors = the columns of the matrix
+        lines!(ax, [0.0, a], [0.0, c])   # e₁ = (1,0) ↦ (a, c)
+        lines!(ax, [0.0, b], [0.0, d])   # e₂ = (0,1) ↦ (b, d)
+        fig
+    end
 end
 
-# ╔═╡ ab000005-0000-4000-8000-000000000005
-# ONE function, ANY element type — that is abstraction. It drops `new` into a
-# flat (column-major) grid at row i, column j, without caring what `new` is.
-function place(new, grid::Vector, i, j, nrows)
-	out = copy(grid)
-	out[(j - 1) * nrows + i] = new
-	return out
+# ╔═╡ 75000007-0000-4000-8000-000000000007
+draw_map(a, b, c, d, 0.0)
+
+# ╔═╡ 75000004-0000-4000-8000-000000000004
+md"""
+## Lines stay lines — *that's* what "linear" means
+
+No matter how you set $a, b, c, d$, every straight grid line maps to another straight
+line, and the origin stays put. That is the defining property of a linear map. Try to
+make the grid **fold or curve** with the sliders above — you can't. A linear map can
+rotate, scale, shear and flip, but it can never bend a straight line.
+"""
+
+# ╔═╡ 75000005-0000-4000-8000-000000000005
+md"""
+## A familiar one: rotation
+
+Some matrices have names. A **rotation** by angle $\theta$ is
+
+$$\begin{pmatrix}\cos\theta & -\sin\theta \\ \sin\theta & \cos\theta\end{pmatrix}.$$
+
+Spin the angle and watch the grid turn rigidly — distances and angles are preserved.
+
+angle θ (degrees) = $(@bind deg Slider(-180:5:180; default = 30, show_value = true))
+"""
+
+# ╔═╡ 75000008-0000-4000-8000-000000000008
+let
+    θ = deg * 3.141592653589793 / 180.0
+    co = cos(θ)
+    si = sin(θ)
+    draw_map(co, -si, si, co, 0.0)
 end
 
-# ╔═╡ ab000006-0000-4000-8000-000000000006
+# ╔═╡ 75000009-0000-4000-8000-000000000009
 md"""
-## The same operation, on different types
+## Nonlinearity: when lines bend
 
-`place` doesn't know or care what it's placing. Move the sliders — the **same**
-function fills a cell in a grid of numbers _and_ a grid of pixels.
+Drop the linearity requirement and the world gets wavy. Below we keep the identity
+linear part but add a nonlinear term $\text{nl}\cdot\sin(3y)$ to $x$ (and symmetrically).
+At strength $0$ it's the plain grid; turn it up and the straight lines **curve** — no
+matrix can do that.
 
-row $(@bind ai Slider(1:3; default = 1, show_value = true))
-column $(@bind aj Slider(1:4; default = 1, show_value = true))
+nonlinear strength = $(@bind nl Slider(0.0:0.05:0.6; default = 0.3, show_value = true))
 """
 
-# ╔═╡ ab000007-0000-4000-8000-000000000007
-# numbers: a flat Int grid with a 5 dropped in (shown column-major).
-place(5, fill(1, 12), ai, aj, 3)
+# ╔═╡ 7500000a-0000-4000-8000-00000000000a
+draw_map(1.0, 0.0, 0.0, 1.0, nl)
 
-# ╔═╡ ab000008-0000-4000-8000-000000000008
-# pixels: the SAME `place`, now on a gray grid — a black square at (row, col).
-gray_figure(place(0.0, fill(0.85, 12), ai, aj, 3), 3, 4)
-
-# ╔═╡ ab000009-0000-4000-8000-000000000009
+# ╔═╡ 7500000b-0000-4000-8000-00000000000b
 md"""
-## One more type — pick a fill
+# Summary
 
-Still the same idea: choose a shade and we fill the whole grid with it, then drop
-a marker. The operation is abstract over _what_ a "value" even is.
+- A **linear transformation** of the plane is exactly a **2×2 matrix**; it acts by
+  $(x,y) \mapsto (a x + b y,\; c x + d y)$.
+- The **columns** of the matrix are where the basis vectors $e_1, e_2$ land — that's
+  all the information the map contains.
+- **Linear** maps send straight lines to straight lines and fix the origin: rotation,
+  scaling, shear, reflection. They *compose* by multiplying matrices.
+- **Nonlinear** maps can bend lines — strictly more expressive, and the reason image
+  warps, neural nets and curved geometry are interesting.
 
-shade $(@bind shade Select([0.85 => "light", 0.5 => "mid", 0.2 => "dark"]))
-"""
-
-# ╔═╡ ab000010-0000-4000-8000-000000000010
-gray_figure(place(0.0, fill(shade, 12), ai, aj, 3), 3, 4)
-
-# ╔═╡ ab00000b-0000-4000-8000-00000000000b
-md"""
-## Why it matters
-
-We wrote `place` **once** and it worked for integers and for pixels — we never
-specialized it to a type. That's the whole game: a language that lets you operate
-at the level where the operation _makes sense_, and abstract away the rest.
-"""
+Every grid above is a live WebAssembly island recomputed as you drag the sliders.
+""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -365,16 +431,18 @@ version = "1.64.0+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─ab000003-0000-4000-8000-000000000003
-# ╟─ab000001-0000-4000-8000-000000000001
-# ╠═ab000005-0000-4000-8000-000000000005
-# ╟─ab000006-0000-4000-8000-000000000006
-# ╠═ab000007-0000-4000-8000-000000000007
-# ╠═ab000008-0000-4000-8000-000000000008
-# ╟─ab000009-0000-4000-8000-000000000009
-# ╠═ab000010-0000-4000-8000-000000000010
-# ╟─ab00000b-0000-4000-8000-00000000000b
-# ╟─ab000002-0000-4000-8000-000000000002
-# ╟─ab000004-0000-4000-8000-000000000004
+# ╟─75000001-0000-4000-8000-000000000001
+# ╠═75000010-0000-4000-8000-000000000010
+# ╠═75000011-0000-4000-8000-000000000011
+# ╟─75000002-0000-4000-8000-000000000002
+# ╟─75000003-0000-4000-8000-000000000003
+# ╠═75000006-0000-4000-8000-000000000006
+# ╠═75000007-0000-4000-8000-000000000007
+# ╟─75000004-0000-4000-8000-000000000004
+# ╟─75000005-0000-4000-8000-000000000005
+# ╠═75000008-0000-4000-8000-000000000008
+# ╟─75000009-0000-4000-8000-000000000009
+# ╠═7500000a-0000-4000-8000-00000000000a
+# ╟─7500000b-0000-4000-8000-00000000000b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
