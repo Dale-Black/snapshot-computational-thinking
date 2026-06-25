@@ -20,11 +20,10 @@ env:
 jobs:
   publish:
     runs-on: ubuntu-latest
-    # Runaway guard: a healthy notebook/app build finishes in minutes. If one runs
-    # this long it's hung or far too heavy for a free runner — fail fast instead of
-    # burning ~6h of the repo's Actions budget. Raise this if your build legitimately
-    # needs longer.
-    timeout-minutes: 45
+    # Runaway guard. A big multi-notebook collection (e.g. a whole course module of
+    # WasmMakie notebooks) can legitimately take a couple of hours to compile, so give
+    # it generous headroom; GitHub's hard cap for a hosted job is 6h regardless.
+    timeout-minutes: 300
     steps:
       - name: Checkout notebooks repo
         uses: actions/checkout@v4
