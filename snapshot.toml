@@ -1,0 +1,4 @@
+title = "Computational Thinking · Module 1"
+type  = "collection"
+theme = "snapshot"
+home  = "index.jl"
