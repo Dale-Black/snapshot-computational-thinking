@@ -104,30 +104,29 @@ end
 
 # ╔═╡ d1a00007-0000-4000-8000-000000000007
 ebm_stats = let
-    # Run the SAME Euler simulation as the figure, so this readout depends on ALL three
-    # sliders (co2ppm, nyears, t0i) and lands in the figure's island group. (A readout
-    # that used only a SUBSET of the figure's bonds compiled to a mismatched-arity wasm
-    # export that loaded in Chrome but fell back in Firefox/Zen.) Reports the temperature
-    # the planet has reached after `nyears`, plus the equilibrium it is heading toward.
+    # Structurally identical to the carbon-and-warming readout (a known-good pattern):
+    # forcing recomputed INSIDE the year loop, every reported number is a final-state
+    # value that depends on all three sliders (co2ppm, nyears, t0i). The earlier version
+    # mixed an all-bonds value (final T) with a co2ppm-only value (equilibrium) in one
+    # tuple, which left the other two bonds partially baked.
     absorbed = 239.4
     A = 214.6
     B = 1.77
     C = 51.0
-    forcing = 5.35 * log(Float64(co2ppm) / 280.0)
+    co2 = Float64(co2ppm)
     T = Float64(t0i)
     for y in 1:nyears
-        dT = (absorbed - (A + B * T) + forcing) / C
-        T = T + dT
+        forcing = 5.35 * log(co2 / 280.0)
+        T = T + (absorbed - (A + B * T) + forcing) / C
     end
-    teq = (absorbed - A + forcing) / B      # the dT/dt = 0 balance point
-    (floor(T * 10.0) / 10.0, floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0)
+    (floor(T * 10.0) / 10.0, floor((T - 14.0) * 10.0) / 10.0)
 end
 
 # ╔═╡ d1a00017-0000-4000-8000-000000000017
-md"""**After $(nyears) years at $(co2ppm) ppm CO2** the planet has reached about
-**$(ebm_stats[1]) C**, heading toward an equilibrium of **$(ebm_stats[2]) C** --
-a warming of **$(ebm_stats[3]) C** above the pre-industrial 14 C baseline. That balance
-point is set by the CO2 level alone, no matter what temperature you start from.
+md"""**After $(nyears) years at $(co2ppm) ppm CO2** the planet has warmed to about
+**$(ebm_stats[1]) C** -- a warming of **$(ebm_stats[2]) C** above the pre-industrial 14 C
+baseline. The balance point is set by the CO2 level alone, no matter what temperature you
+start from.
 """
 
 # ╔═╡ d1a00008-0000-4000-8000-000000000008
