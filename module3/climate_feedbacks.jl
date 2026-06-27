@@ -88,7 +88,7 @@ fb_stats = let
     tnow = dT_base / (1.0 - fnow)
     amp = 1.0 / (1.0 - fnow)
     (floor(fnow * 100.0) / 100.0, floor(dT_base * 100.0) / 100.0, floor(amp * 100.0) / 100.0, floor(tnow * 10.0) / 10.0)
-end
+end;
 
 # ╔═╡ d3a00016-0000-4000-8000-000000000016
 md"""**At feedback f = $(fb_stats[1]):** the bare

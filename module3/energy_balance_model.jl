@@ -120,7 +120,7 @@ ebm_stats = let
         T = T + (absorbed - (A + B * T) + forcing) / C
     end
     (floor(T * 10.0) / 10.0, floor((T - 14.0) * 10.0) / 10.0)
-end
+end;
 
 # ╔═╡ d1a00017-0000-4000-8000-000000000017
 md"""**After $(nyears) years at $(co2ppm) ppm CO2** the planet has warmed to about

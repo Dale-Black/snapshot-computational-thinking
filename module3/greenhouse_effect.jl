@@ -91,7 +91,7 @@ gh_stats = let
     B = 1.77
     teq = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
     (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0)
-end
+end;
 
 # ╔═╡ d2a00016-0000-4000-8000-000000000016
 md"""**At $(co2ppm) ppm:** equilibrium temperature is about **$(gh_stats[1]) C** --

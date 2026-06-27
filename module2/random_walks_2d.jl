@@ -121,7 +121,7 @@ rw2_stats = let
         end
     end
     (floor(sqrt(x * x + y * y) * 100.0) / 100.0, floor(sqrt(Float64(nsteps)) * 100.0) / 100.0)
-end
+end;
 
 # ╔═╡ c6a00016-0000-4000-8000-000000000016
 md"""**After $(nsteps) steps** the walker is **$(rw2_stats[1])** units

@@ -108,7 +108,7 @@ cw_stats = let
         T = T + dT
     end
     (floor(co2), floor(T * 10.0) / 10.0, floor((T - 14.0) * 10.0) / 10.0)
-end
+end;
 
 # ╔═╡ d6a00016-0000-4000-8000-000000000016
 md"""**In $(nyears) years:** CO2 reaches about **$(cw_stats[1]) ppm** and the planet warms to

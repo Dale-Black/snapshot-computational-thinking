@@ -145,7 +145,7 @@ opt_stats = let
         x = x - lr * slope(x)
     end
     (floor(x * 1000.0) / 1000.0, floor(f_land(x) * 1000.0) / 1000.0)
-end
+end;
 
 # ╔═╡ c4a00018-0000-4000-8000-000000000018
 md"""**After $(nsteps) steps** the ball is at x = **$(opt_stats[1])**,

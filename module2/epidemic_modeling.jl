@@ -145,7 +145,7 @@ sir_stats = let
         end
     end
     (floor(r0 * 100.0) / 100.0, floor(peak * 1000.0) / 10.0, peakday, floor(rec * 1000.0) / 10.0)
-end
+end;
 
 # ╔═╡ c2a00017-0000-4000-8000-000000000017
 md"""**R0 = $(sir_stats[1]).** Peak infection reaches about

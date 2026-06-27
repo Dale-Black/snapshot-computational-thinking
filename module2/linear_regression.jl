@@ -134,7 +134,7 @@ fit_stats = let
     m_fit = (nn * sxy - sx * sy) / (nn * sxx - sx * sx)
     b_fit = (sy - m_fit * sx) / nn
     (floor(m_fit * 1000.0) / 1000.0, floor(b_fit * 1000.0) / 1000.0, floor(m_true * 100.0) / 100.0)
-end
+end;
 
 # ╔═╡ c7a00016-0000-4000-8000-000000000016
 md"""**Fitted line:** y = **$(fit_stats[1])** x +

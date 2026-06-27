@@ -112,7 +112,7 @@ mc_stats = let
         err = -err
     end
     (floor(est * 100000.0) / 100000.0, floor(err * 100000.0) / 100000.0)
-end
+end;
 
 # ╔═╡ c3a00016-0000-4000-8000-000000000016
 md"""**Estimate from $(ndarts) darts: $(mc_stats[1])**

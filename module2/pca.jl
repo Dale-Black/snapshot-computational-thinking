@@ -190,7 +190,7 @@ pca_stats = let
         frac = lam1 / total
     end
     (floor(vx * 100.0) / 100.0, floor(vy * 100.0) / 100.0, floor(frac * 1000.0) / 10.0)
-end
+end;
 
 # ╔═╡ c8a00016-0000-4000-8000-000000000016
 md"""**First principal component direction:** about

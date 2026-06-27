@@ -137,7 +137,7 @@ rel_stats = let
         end
     end
     (floor((total / Float64(done)) * 100.0) / 100.0, floor((1.0 / rate) * 100.0) / 100.0)
-end
+end;
 
 # ╔═╡ c9a00016-0000-4000-8000-000000000016
 md"""**Average time to first failure:** about **$(rel_stats[1])**
