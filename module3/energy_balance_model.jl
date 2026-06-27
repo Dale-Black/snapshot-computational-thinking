@@ -104,22 +104,30 @@ end
 
 # ╔═╡ d1a00007-0000-4000-8000-000000000007
 ebm_stats = let
-    # equilibrium temperature in a SEPARATE bond-dependent cell so the markdown below
-    # interpolates it live (values inside a markdown cell's own `let` bake to the
-    # slider defaults).
+    # Run the SAME Euler simulation as the figure, so this readout depends on ALL three
+    # sliders (co2ppm, nyears, t0i) and lands in the figure's island group. (A readout
+    # that used only a SUBSET of the figure's bonds compiled to a mismatched-arity wasm
+    # export that loaded in Chrome but fell back in Firefox/Zen.) Reports the temperature
+    # the planet has reached after `nyears`, plus the equilibrium it is heading toward.
     absorbed = 239.4
     A = 214.6
     B = 1.77
+    C = 51.0
     forcing = 5.35 * log(Float64(co2ppm) / 280.0)
-    teq = (absorbed - A + forcing) / B      # solve dT/dt = 0
-    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0)
+    T = Float64(t0i)
+    for y in 1:nyears
+        dT = (absorbed - (A + B * T) + forcing) / C
+        T = T + dT
+    end
+    teq = (absorbed - A + forcing) / B      # the dT/dt = 0 balance point
+    (floor(T * 10.0) / 10.0, floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0)
 end
 
 # ╔═╡ d1a00017-0000-4000-8000-000000000017
-md"""**At $(co2ppm) ppm CO2** the planet settles near **$(ebm_stats[1]) C** --
-that is **$(ebm_stats[2]) C** of warming above the pre-industrial 14 C
-baseline. Notice it always coasts to the *same* equilibrium no matter where you start it:
-the balance point is set by physics, not by the initial temperature.
+md"""**After $(nyears) years at $(co2ppm) ppm CO2** the planet has reached about
+**$(ebm_stats[1]) C**, heading toward an equilibrium of **$(ebm_stats[2]) C** --
+a warming of **$(ebm_stats[3]) C** above the pre-industrial 14 C baseline. That balance
+point is set by the CO2 level alone, no matter what temperature you start from.
 """
 
 # ╔═╡ d1a00008-0000-4000-8000-000000000008
