@@ -90,16 +90,14 @@ gh_stats = let
     A = 214.6
     B = 1.77
     teq = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
-    teq2 = (absorbed - A + 5.35 * log(2.0 * Float64(co2ppm) / 280.0)) / B
-    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0, floor((teq2 - teq) * 10.0) / 10.0, 2 * co2ppm)
+    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0)
 end
 
 # ╔═╡ d2a00016-0000-4000-8000-000000000016
-md"""**At $(co2ppm) ppm:** equilibrium temperature is about
-**$(gh_stats[1]) C** (warming of **$(gh_stats[2]) C**).
-Doubling from here to $(gh_stats[4]) ppm adds only another
-**$(gh_stats[3]) C** -- the same step in temperature for *any*
-doubling. That is the logarithmic signature of the greenhouse effect.
+md"""**At $(co2ppm) ppm:** equilibrium temperature is about **$(gh_stats[1]) C** --
+a warming of **$(gh_stats[2]) C** above the pre-industrial baseline. Because the warming
+is logarithmic, each *doubling* of CO2 adds about the same step in temperature, no matter
+where you start -- the signature of the greenhouse effect.
 """
 
 # ╔═╡ d2a00007-0000-4000-8000-000000000007
