@@ -4,16 +4,21 @@ theme = "snapshot"
 home  = "index.jl"
 
 # Folders = modules. Each [[modules]] block names a top-level subfolder and its
-# label; the sidebar renders one grouped section per module in this order. Drop a
-# new folder + a block here to add a module — nothing else needed.
+# label; the sidebar renders one collapsible grouped section per module in this
+# order. `open` sets whether the group starts expanded (default true); the group
+# also auto-expands on whichever page's notebook lives inside it. Drop a new
+# folder + a block here to add a module — nothing else needed.
 [[modules]]
 dir   = "module1"
 title = "Images, Transformations & Abstractions"
+open  = true
 
 [[modules]]
 dir   = "module2"
 title = "Social Science & Data Science"
+open  = false
 
 [[modules]]
 dir   = "module3"
 title = "Climate Science"
+open  = false
