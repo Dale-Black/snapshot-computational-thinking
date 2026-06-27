@@ -1,4 +1,15 @@
-title = "Computational Thinking · Module 1"
+title = "Computational Thinking"
 type  = "collection"
 theme = "snapshot"
 home  = "index.jl"
+
+# Folders = modules. Each [[modules]] block names a top-level subfolder and its
+# label; the sidebar renders one grouped section per module in this order. Drop a
+# new folder + a block here to add a module — nothing else needed.
+[[modules]]
+dir   = "module1"
+title = "Images, Transformations & Abstractions"
+
+[[modules]]
+dir   = "module2"
+title = "Social Science & Data Science"
