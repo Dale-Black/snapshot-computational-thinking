@@ -67,18 +67,17 @@ let
     ty = Vector{Float64}(undef, npts)
     for k in 1:npts
         co2 = 280.0 + 10.0 * Float64(k - 1)
-        teq = (absorbed - A + 5.35 * log(co2 / 280.0)) / B
+        teq = 14.0                                          # at 280 ppm: no warming (avoids log(1))
+        if co2 > 280.0
+            teq = (absorbed - A + 5.35 * log(co2 / 280.0)) / B
+        end
         cx[k] = co2
         ty[k] = teq
     end
-    # where the slider currently sits
-    teq_now = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
-
     fig = Figure(size = (600, 350))
     ax = Axis(fig[1, 1])
     lines!(ax, [280.0, 1400.0], [14.0, 14.0])               # pre-industrial baseline
-    lines!(ax, cx, ty)                                       # the warming curve
-    lines!(ax, [Float64(co2ppm), Float64(co2ppm)], [10.0, teq_now])  # marker at the slider
+    lines!(ax, cx, ty)                                       # the warming curve (fixed)
     fig
 end
 
@@ -92,13 +91,13 @@ gh_stats = let
     B = 1.77
     teq = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
     teq2 = (absorbed - A + 5.35 * log(2.0 * Float64(co2ppm) / 280.0)) / B
-    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0, floor((teq2 - teq) * 10.0) / 10.0)
+    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0, floor((teq2 - teq) * 10.0) / 10.0, 2 * co2ppm)
 end
 
 # ╔═╡ d2a00016-0000-4000-8000-000000000016
 md"""**At $(co2ppm) ppm:** equilibrium temperature is about
 **$(gh_stats[1]) C** (warming of **$(gh_stats[2]) C**).
-Doubling from here to $(2 * co2ppm) ppm adds only another
+Doubling from here to $(gh_stats[4]) ppm adds only another
 **$(gh_stats[3]) C** -- the same step in temperature for *any*
 doubling. That is the logarithmic signature of the greenhouse effect.
 """
