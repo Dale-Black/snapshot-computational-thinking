@@ -130,7 +130,10 @@ let
 end
 
 # ╔═╡ c8a00006-0000-4000-8000-000000000006
-let
+pca_stats = let
+    # compute the principal component in a SEPARATE bond-dependent cell so the markdown
+    # below interpolates it live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     tilt = Float64(tilti) / 10.0
     noise = Float64(noisei) / 10.0
     n = npoints
@@ -186,13 +189,16 @@ let
     if total > 0.000001
         frac = lam1 / total
     end
-    md"""**First principal component direction:** about
-    (**$(floor(vx * 100.0) / 100.0)**, **$(floor(vy * 100.0) / 100.0)**). It captures
-    **$(floor(frac * 1000.0) / 10.0)%** of the cloud's total variance. Tighten the scatter
-    and that number climbs toward 100% (the data becomes nearly one-dimensional); loosen it
-    and the cloud rounds out so no single direction dominates.
-    """
+    (floor(vx * 100.0) / 100.0, floor(vy * 100.0) / 100.0, floor(frac * 1000.0) / 10.0)
 end
+
+# ╔═╡ c8a00016-0000-4000-8000-000000000016
+md"""**First principal component direction:** about
+(**$(pca_stats[1])**, **$(pca_stats[2])**). It captures
+**$(pca_stats[3])%** of the cloud's total variance. Tighten the scatter
+and that number climbs toward 100% (the data becomes nearly one-dimensional); loosen it
+and the cloud rounds out so no single direction dominates.
+"""
 
 # ╔═╡ c8a00007-0000-4000-8000-000000000007
 md"""
@@ -474,7 +480,8 @@ version = "1.64.0+1"
 # ╠═c8a00003-0000-4000-8000-000000000003
 # ╟─c8a00004-0000-4000-8000-000000000004
 # ╠═c8a00005-0000-4000-8000-000000000005
-# ╟─c8a00006-0000-4000-8000-000000000006
+# ╠═c8a00006-0000-4000-8000-000000000006
+# ╟─c8a00016-0000-4000-8000-000000000016
 # ╟─c8a00007-0000-4000-8000-000000000007
 # ╟─c8a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

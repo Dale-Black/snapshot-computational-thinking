@@ -108,7 +108,10 @@ let
 end
 
 # ╔═╡ d5a00006-0000-4000-8000-000000000006
-let
+diff_peak = let
+    # the final center temperature in a SEPARATE bond-dependent cell so the markdown
+    # below interpolates it live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     nx = 61
     D = Float64(diffi) / 100.0
     dt = 0.2
@@ -133,14 +136,16 @@ let
             T[i] = Tn[i]
         end
     end
-    peak = T[31]
-    md"""**The peak (center) temperature has fallen to $(floor(peak * 1000.0) / 1000.0)** from
-    its starting value of 1.0 as the heat spread outward. Raise the diffusivity or let more
-    time pass and the block flattens faster -- diffusion never piles heat up, it only ever
-    smooths it out. Push diffusivity past about 2.5 and the simple scheme goes unstable (the
-    numbers blow up) -- a first taste of why choosing the time step matters in PDE solvers.
-    """
+    floor(T[31] * 1000.0) / 1000.0
 end
+
+# ╔═╡ d5a00016-0000-4000-8000-000000000016
+md"""**The peak (center) temperature has fallen to $(diff_peak)** from
+its starting value of 1.0 as the heat spread outward. Raise the diffusivity or let more
+time pass and the block flattens faster -- diffusion never piles heat up, it only ever
+smooths it out. Push diffusivity past about 2.5 and the simple scheme goes unstable (the
+numbers blow up) -- a first taste of why choosing the time step matters in PDE solvers.
+"""
 
 # ╔═╡ d5a00007-0000-4000-8000-000000000007
 md"""
@@ -423,7 +428,8 @@ version = "1.64.0+1"
 # ╠═d5a00003-0000-4000-8000-000000000003
 # ╟─d5a00004-0000-4000-8000-000000000004
 # ╠═d5a00005-0000-4000-8000-000000000005
-# ╟─d5a00006-0000-4000-8000-000000000006
+# ╠═d5a00006-0000-4000-8000-000000000006
+# ╟─d5a00016-0000-4000-8000-000000000016
 # ╟─d5a00007-0000-4000-8000-000000000007
 # ╟─d5a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

@@ -99,7 +99,10 @@ let
 end
 
 # ╔═╡ d4a00006-0000-4000-8000-000000000006
-let
+sb_final = let
+    # final temperature in a SEPARATE bond-dependent cell so the markdown below
+    # interpolates it live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     A = 214.6
     B = 1.77
     C = 51.0
@@ -117,16 +120,15 @@ let
         dT = (absorbed - (A + B * T)) / C
         T = T + dT
     end
-    state = "a warm, ice-free world"
-    if T < -5.0
-        state = "a frozen Snowball Earth"
-    end
-    md"""**Final temperature: $(floor(T * 10.0) / 10.0) °C** -- $(state). Start just a few
-    degrees colder, or dim the Sun a percent or two, and the planet can tip irreversibly into
-    the frozen basin: once ice covers everything, it reflects so much sunlight that even
-    today's Sun struggles to melt it back. Two stable worlds, one tipping point between them.
-    """
+    floor(T * 10.0) / 10.0
 end
+
+# ╔═╡ d4a00016-0000-4000-8000-000000000016
+md"""**Final temperature: $(sb_final) C** -- $(sb_final < -5.0 ? "a frozen Snowball Earth" : "a warm, ice-free world"). Start just a few
+degrees colder, or dim the Sun a percent or two, and the planet can tip irreversibly into
+the frozen basin: once ice covers everything, it reflects so much sunlight that even
+today's Sun struggles to melt it back. Two stable worlds, one tipping point between them.
+"""
 
 # ╔═╡ d4a00007-0000-4000-8000-000000000007
 md"""
@@ -408,7 +410,8 @@ version = "1.64.0+1"
 # ╠═d4a00003-0000-4000-8000-000000000003
 # ╟─d4a00004-0000-4000-8000-000000000004
 # ╠═d4a00005-0000-4000-8000-000000000005
-# ╟─d4a00006-0000-4000-8000-000000000006
+# ╠═d4a00006-0000-4000-8000-000000000006
+# ╟─d4a00016-0000-4000-8000-000000000016
 # ╟─d4a00007-0000-4000-8000-000000000007
 # ╟─d4a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

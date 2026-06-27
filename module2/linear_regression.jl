@@ -105,7 +105,10 @@ let
 end
 
 # ╔═╡ c7a00006-0000-4000-8000-000000000006
-let
+fit_stats = let
+    # compute the least-squares fit in a SEPARATE bond-dependent cell so the markdown
+    # below interpolates it live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     m_true = Float64(slopei) / 10.0
     noise = Float64(noisei) / 10.0
     n = npoints
@@ -130,12 +133,15 @@ let
     nn = Float64(n)
     m_fit = (nn * sxy - sx * sy) / (nn * sxx - sx * sx)
     b_fit = (sy - m_fit * sx) / nn
-    md"""**Fitted line:** y = **$(floor(m_fit * 1000.0) / 1000.0)** x +
-    **$(floor(b_fit * 1000.0) / 1000.0)**  (true slope $(floor(m_true * 100.0) / 100.0),
-    true intercept 2.0). Add more noise and the fit wobbles; add more *points* and it locks
-    back onto the truth -- more data beats noisier data.
-    """
+    (floor(m_fit * 1000.0) / 1000.0, floor(b_fit * 1000.0) / 1000.0, floor(m_true * 100.0) / 100.0)
 end
+
+# ╔═╡ c7a00016-0000-4000-8000-000000000016
+md"""**Fitted line:** y = **$(fit_stats[1])** x +
+**$(fit_stats[2])**  (true slope $(fit_stats[3]),
+true intercept 2.0). Add more noise and the fit wobbles; add more *points* and it locks
+back onto the truth -- more data beats noisier data.
+"""
 
 # ╔═╡ c7a00007-0000-4000-8000-000000000007
 md"""
@@ -418,7 +424,8 @@ version = "1.64.0+1"
 # ╠═c7a00003-0000-4000-8000-000000000003
 # ╟─c7a00004-0000-4000-8000-000000000004
 # ╠═c7a00005-0000-4000-8000-000000000005
-# ╟─c7a00006-0000-4000-8000-000000000006
+# ╠═c7a00006-0000-4000-8000-000000000006
+# ╟─c7a00016-0000-4000-8000-000000000016
 # ╟─c7a00007-0000-4000-8000-000000000007
 # ╟─c7a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

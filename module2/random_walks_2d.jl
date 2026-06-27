@@ -30,9 +30,6 @@ begin
     using PlutoUI, WasmMakie
 end
 
-# ╔═╡ c6a00003-0000-4000-8000-000000000003
-PlutoUI.TableOfContents(aside = true)
-
 # ╔═╡ c6a00001-0000-4000-8000-000000000001
 md"""
 # Random walks in two dimensions
@@ -46,6 +43,9 @@ This is exactly how a pollen grain jitters in water (Brownian motion), how a gas
 diffuses, and how heat spreads. Drag the sliders to send the walker on a longer journey or
 a different random path, traced live in your browser as WebAssembly.
 """
+
+# ╔═╡ c6a00003-0000-4000-8000-000000000003
+PlutoUI.TableOfContents(aside = true)
 
 # ╔═╡ c6a00004-0000-4000-8000-000000000004
 md"""
@@ -94,8 +94,10 @@ let
 end
 
 # ╔═╡ c6a00006-0000-4000-8000-000000000006
-let
-    # how far from home did it get? recompute the endpoint and compare to sqrt(steps)
+rw2_stats = let
+    # compute the readout numbers in a SEPARATE bond-dependent cell (returns a tuple)
+    # so the markdown below can interpolate it live — values buried inside a markdown
+    # cell's own `let` get baked to the slider defaults.
     s = (seed * 2654435761 + 12345) % 2147483647
     if s == 0
         s = 1
@@ -118,14 +120,15 @@ let
             y = y - 1.0
         end
     end
-    dist = sqrt(x * x + y * y)
-    expected = sqrt(Float64(nsteps))
-    md"""**After $(nsteps) steps** the walker is **$(floor(dist * 100.0) / 100.0)** units
-    from where it started, while the typical distance grows like sqrt(steps) =
-    **$(floor(expected * 100.0) / 100.0)**. Diffusion is slow: to wander twice as far from
-    home you need *four times* as many steps.
-    """
+    (floor(sqrt(x * x + y * y) * 100.0) / 100.0, floor(sqrt(Float64(nsteps)) * 100.0) / 100.0)
 end
+
+# ╔═╡ c6a00016-0000-4000-8000-000000000016
+md"""**After $(nsteps) steps** the walker is **$(rw2_stats[1])** units
+from where it started, while the typical distance grows like sqrt(steps) =
+**$(rw2_stats[2])**. Diffusion is slow: to wander twice as far from
+home you need *four times* as many steps.
+"""
 
 # ╔═╡ c6a00007-0000-4000-8000-000000000007
 md"""
@@ -404,7 +407,8 @@ version = "1.64.0+1"
 # ╠═c6a00003-0000-4000-8000-000000000003
 # ╟─c6a00004-0000-4000-8000-000000000004
 # ╠═c6a00005-0000-4000-8000-000000000005
-# ╟─c6a00006-0000-4000-8000-000000000006
+# ╠═c6a00006-0000-4000-8000-000000000006
+# ╟─c6a00016-0000-4000-8000-000000000016
 # ╟─c6a00007-0000-4000-8000-000000000007
 # ╟─c6a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

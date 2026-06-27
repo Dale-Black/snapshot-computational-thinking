@@ -135,18 +135,24 @@ let
 end
 
 # ╔═╡ c4a00008-0000-4000-8000-000000000008
-let
+opt_stats = let
+    # run the descent in a SEPARATE bond-dependent cell so the markdown below
+    # interpolates the result live (values inside a markdown cell's own `let` bake to
+    # the slider defaults).
     x = Float64(x0i) / 10.0
     lr = Float64(lri) / 1000.0
     for i in 1:nsteps
         x = x - lr * slope(x)
     end
-    md"""**After $(nsteps) steps** the ball is at x = **$(floor(x * 1000.0) / 1000.0)**,
-    where f = **$(floor(f_land(x) * 1000.0) / 1000.0)**. Start on the left versus the right
-    and it settles in a *different* valley. Crank the learning rate up past about 0.05 and
-    watch it overshoot and fly apart -- the step size matters as much as the direction.
-    """
+    (floor(x * 1000.0) / 1000.0, floor(f_land(x) * 1000.0) / 1000.0)
 end
+
+# ╔═╡ c4a00018-0000-4000-8000-000000000018
+md"""**After $(nsteps) steps** the ball is at x = **$(opt_stats[1])**,
+where f = **$(opt_stats[2])**. Start on the left versus the right
+and it settles in a *different* valley. Crank the learning rate up past about 0.05 and
+watch it overshoot and fly apart -- the step size matters as much as the direction.
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -405,7 +411,8 @@ version = "1.64.0+1"
 # ╟─c4a00004-0000-4000-8000-000000000004
 # ╟─c4a00006-0000-4000-8000-000000000006
 # ╠═c4a00007-0000-4000-8000-000000000007
-# ╟─c4a00008-0000-4000-8000-000000000008
+# ╠═c4a00008-0000-4000-8000-000000000008
+# ╟─c4a00018-0000-4000-8000-000000000018
 # ╟─c4a00009-0000-4000-8000-000000000009
 # ╟─c4a0000a-0000-4000-8000-000000000010
 # ╠═c4a00005-0000-4000-8000-000000000005

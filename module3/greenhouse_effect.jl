@@ -83,19 +83,25 @@ let
 end
 
 # ╔═╡ d2a00006-0000-4000-8000-000000000006
-let
+gh_stats = let
+    # equilibrium temperatures in a SEPARATE bond-dependent cell so the markdown below
+    # interpolates them live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     absorbed = 239.4
     A = 214.6
     B = 1.77
     teq = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
     teq2 = (absorbed - A + 5.35 * log(2.0 * Float64(co2ppm) / 280.0)) / B
-    md"""**At $(co2ppm) ppm:** equilibrium temperature is about
-    **$(floor(teq * 10.0) / 10.0) °C** (warming of **$(floor((teq - 14.0) * 10.0) / 10.0) °C**).
-    Doubling from here to $(2 * co2ppm) ppm adds only another
-    **$(floor((teq2 - teq) * 10.0) / 10.0) °C** -- the same step in temperature for *any*
-    doubling. That is the logarithmic signature of the greenhouse effect.
-    """
+    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0, floor((teq2 - teq) * 10.0) / 10.0)
 end
+
+# ╔═╡ d2a00016-0000-4000-8000-000000000016
+md"""**At $(co2ppm) ppm:** equilibrium temperature is about
+**$(gh_stats[1]) C** (warming of **$(gh_stats[2]) C**).
+Doubling from here to $(2 * co2ppm) ppm adds only another
+**$(gh_stats[3]) C** -- the same step in temperature for *any*
+doubling. That is the logarithmic signature of the greenhouse effect.
+"""
 
 # ╔═╡ d2a00007-0000-4000-8000-000000000007
 md"""
@@ -376,7 +382,8 @@ version = "1.64.0+1"
 # ╠═d2a00003-0000-4000-8000-000000000003
 # ╟─d2a00004-0000-4000-8000-000000000004
 # ╠═d2a00005-0000-4000-8000-000000000005
-# ╟─d2a00006-0000-4000-8000-000000000006
+# ╠═d2a00006-0000-4000-8000-000000000006
+# ╟─d2a00016-0000-4000-8000-000000000016
 # ╟─d2a00007-0000-4000-8000-000000000007
 # ╟─d2a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

@@ -120,8 +120,10 @@ let
 end
 
 # ╔═╡ c2a00007-0000-4000-8000-000000000007
-let
-    # rerun the same simulation, this time tracking the height and timing of the peak
+sir_stats = let
+    # rerun the simulation in a SEPARATE bond-dependent cell, tracking the peak, and
+    # return the readout numbers as a tuple (the markdown cell below interpolates them;
+    # values computed inside a markdown cell's own `let` bake to the slider defaults).
     gamma = 1.0 / Float64(infdays)
     r0 = Float64(r0x10) / 10.0
     beta = r0 * gamma
@@ -142,13 +144,16 @@ let
             peakday = d
         end
     end
-    md"""**R0 = $(floor(r0 * 100.0) / 100.0).** Peak infection reaches about
-    **$(floor(peak * 1000.0) / 10.0)%** of the population at once, around day
-    **$(peakday)**, and by the end **$(floor(rec * 1000.0) / 10.0)%** have been
-    infected at some point. Push R0 below 1 (low infectiousness, fast recovery) and
-    the outbreak never gets going.
-    """
+    (floor(r0 * 100.0) / 100.0, floor(peak * 1000.0) / 10.0, peakday, floor(rec * 1000.0) / 10.0)
 end
+
+# ╔═╡ c2a00017-0000-4000-8000-000000000017
+md"""**R0 = $(sir_stats[1]).** Peak infection reaches about
+**$(sir_stats[2])%** of the population at once, around day
+**$(sir_stats[3])**, and by the end **$(sir_stats[4])%** have been
+infected at some point. Push R0 below 1 (low infectiousness, fast recovery) and
+the outbreak never gets going.
+"""
 
 # ╔═╡ c2a00008-0000-4000-8000-000000000008
 md"""
@@ -435,7 +440,8 @@ version = "1.64.0+1"
 # ╟─c2a00004-0000-4000-8000-000000000004
 # ╟─c2a00005-0000-4000-8000-000000000005
 # ╠═c2a00006-0000-4000-8000-000000000006
-# ╟─c2a00007-0000-4000-8000-000000000007
+# ╠═c2a00007-0000-4000-8000-000000000007
+# ╟─c2a00017-0000-4000-8000-000000000017
 # ╟─c2a00008-0000-4000-8000-000000000008
 # ╟─c2a00009-0000-4000-8000-000000000009
 # ╟─00000000-0000-0000-0000-000000000001

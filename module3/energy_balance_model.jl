@@ -103,19 +103,24 @@ let
 end
 
 # ╔═╡ d1a00007-0000-4000-8000-000000000007
-let
+ebm_stats = let
+    # equilibrium temperature in a SEPARATE bond-dependent cell so the markdown below
+    # interpolates it live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     absorbed = 239.4
     A = 214.6
     B = 1.77
     forcing = 5.35 * log(Float64(co2ppm) / 280.0)
     teq = (absorbed - A + forcing) / B      # solve dT/dt = 0
-    warming = teq - 14.0
-    md"""**At $(co2ppm) ppm CO2** the planet settles near **$(floor(teq * 10.0) / 10.0) °C** --
-    that is **$(floor(warming * 10.0) / 10.0) °C** of warming above the pre-industrial 14 °C
-    baseline. Notice it always coasts to the *same* equilibrium no matter where you start it:
-    the balance point is set by physics, not by the initial temperature.
-    """
+    (floor(teq * 10.0) / 10.0, floor((teq - 14.0) * 10.0) / 10.0)
 end
+
+# ╔═╡ d1a00017-0000-4000-8000-000000000017
+md"""**At $(co2ppm) ppm CO2** the planet settles near **$(ebm_stats[1]) C** --
+that is **$(ebm_stats[2]) C** of warming above the pre-industrial 14 C
+baseline. Notice it always coasts to the *same* equilibrium no matter where you start it:
+the balance point is set by physics, not by the initial temperature.
+"""
 
 # ╔═╡ d1a00008-0000-4000-8000-000000000008
 md"""
@@ -399,7 +404,8 @@ version = "1.64.0+1"
 # ╟─d1a00004-0000-4000-8000-000000000004
 # ╟─d1a00005-0000-4000-8000-000000000005
 # ╠═d1a00006-0000-4000-8000-000000000006
-# ╟─d1a00007-0000-4000-8000-000000000007
+# ╠═d1a00007-0000-4000-8000-000000000007
+# ╟─d1a00017-0000-4000-8000-000000000017
 # ╟─d1a00008-0000-4000-8000-000000000008
 # ╟─d1a00009-0000-4000-8000-000000000009
 # ╟─00000000-0000-0000-0000-000000000001

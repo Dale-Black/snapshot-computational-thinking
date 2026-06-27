@@ -107,7 +107,10 @@ let
 end
 
 # ╔═╡ c9a00006-0000-4000-8000-000000000006
-let
+rel_stats = let
+    # compute the readout numbers in a SEPARATE bond-dependent cell (returns a tuple)
+    # so the markdown below interpolates them live — values buried inside a markdown
+    # cell's own `let` get baked to the slider defaults by the render-once splice.
     rate = Float64(ratei) / 100.0
     s = 99173
     mn = 1.0e18
@@ -133,15 +136,16 @@ let
             c = 0
         end
     end
-    avg = total / Float64(done)
-    one_part = 1.0 / rate
-    md"""**Average time to first failure:** about **$(floor(avg * 100.0) / 100.0)**
-    (in the same units), versus **$(floor(one_part * 100.0) / 100.0)** for a single part on
-    its own. With $(nparts) parts in series the machine fails roughly $(nparts)x sooner --
-    its failure rate is the SUM of the parts' rates. Redundancy fights this; series chains
-    make it worse.
-    """
+    (floor((total / Float64(done)) * 100.0) / 100.0, floor((1.0 / rate) * 100.0) / 100.0)
 end
+
+# ╔═╡ c9a00016-0000-4000-8000-000000000016
+md"""**Average time to first failure:** about **$(rel_stats[1])**
+(in the same units), versus **$(rel_stats[2])** for a single part on
+its own. With $(nparts) parts in series the machine fails roughly $(nparts)x sooner --
+its failure rate is the SUM of the parts' rates. Redundancy fights this; series chains
+make it worse.
+"""
 
 # ╔═╡ c9a00007-0000-4000-8000-000000000007
 md"""
@@ -424,7 +428,8 @@ version = "1.64.0+1"
 # ╠═c9a00003-0000-4000-8000-000000000003
 # ╟─c9a00004-0000-4000-8000-000000000004
 # ╠═c9a00005-0000-4000-8000-000000000005
-# ╟─c9a00006-0000-4000-8000-000000000006
+# ╠═c9a00006-0000-4000-8000-000000000006
+# ╟─c9a00016-0000-4000-8000-000000000016
 # ╟─c9a00007-0000-4000-8000-000000000007
 # ╟─c9a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

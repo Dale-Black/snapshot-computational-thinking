@@ -176,9 +176,11 @@ let
 end
 
 # ╔═╡ b1a0000e-0000-4000-8000-000000000014
-let
-    # mean and spread of the final positions, accumulated in ONE flat pass (same
-    # single-loop structure as the histogram, for the same wasm reason)
+rw_stats = let
+    # mean and spread of the final positions, accumulated in ONE flat pass. Returns a
+    # tuple so the markdown cell below can interpolate it: computing the numbers in a
+    # SEPARATE bond-dependent cell is what makes the live readout track the sliders
+    # (values buried inside a markdown cell's own `let` get baked to slider defaults).
     m_total = 0.0
     sq_total = 0.0
     s = 777
@@ -204,13 +206,16 @@ let
     end
     sd = sqrt(var)
     expected = sqrt(Float64(nsteps))
-    md"""**Across $(nwalks) walks:** mean final position is about **$(floor(m * 100.0) / 100.0)**,
-    spread (standard deviation) is about **$(floor(sd * 100.0) / 100.0)**.
-
-    For a fair walk (p = 0.5) the mean sits near 0 and the spread tracks
-    sqrt(steps) = **$(floor(expected * 100.0) / 100.0)** -- that's diffusion in one number.
-    """
+    (floor(m * 100.0) / 100.0, floor(sd * 100.0) / 100.0, floor(expected * 100.0) / 100.0)
 end
+
+# ╔═╡ b1a00016-0000-4000-8000-000000000016
+md"""**Across $(nwalks) walks:** mean final position is about **$(rw_stats[1])**,
+spread (standard deviation) is about **$(rw_stats[2])**.
+
+For a fair walk (p = 0.5) the mean sits near 0 and the spread tracks
+sqrt(steps) = **$(rw_stats[3])** -- that's diffusion in one number.
+"""
 
 # ╔═╡ b1a0000f-0000-4000-8000-000000000015
 md"""
@@ -486,7 +491,8 @@ version = "1.64.0+1"
 # ╟─b1a0000a-0000-4000-8000-000000000010
 # ╟─b1a0000b-0000-4000-8000-000000000011
 # ╠═b1a0000d-0000-4000-8000-000000000013
-# ╟─b1a0000e-0000-4000-8000-000000000014
+# ╠═b1a0000e-0000-4000-8000-000000000014
+# ╟─b1a00016-0000-4000-8000-000000000016
 # ╟─b1a0000f-0000-4000-8000-000000000015
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

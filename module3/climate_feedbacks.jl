@@ -79,19 +79,25 @@ let
 end
 
 # ╔═╡ d3a00006-0000-4000-8000-000000000006
-let
+fb_stats = let
+    # amplified sensitivity in a SEPARATE bond-dependent cell so the markdown below
+    # interpolates it live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     dT_base = 1.1
     fnow = Float64(fi) / 100.0
     tnow = dT_base / (1.0 - fnow)
     amp = 1.0 / (1.0 - fnow)
-    md"""**At feedback f = $(floor(fnow * 100.0) / 100.0):** the bare
-    **$(floor(dT_base * 100.0) / 100.0) °C** of CO2 warming is amplified
-    **$(floor(amp * 100.0) / 100.0)x** to about **$(floor(tnow * 10.0) / 10.0) °C** per CO2
-    doubling. Slide f past 0.8 and the curve rockets upward -- near runaway, a tiny change in
-    the feedbacks means an enormous change in the outcome. That is exactly why climate
-    sensitivity is so hard to pin down.
-    """
+    (floor(fnow * 100.0) / 100.0, floor(dT_base * 100.0) / 100.0, floor(amp * 100.0) / 100.0, floor(tnow * 10.0) / 10.0)
 end
+
+# ╔═╡ d3a00016-0000-4000-8000-000000000016
+md"""**At feedback f = $(fb_stats[1]):** the bare
+**$(fb_stats[2]) C** of CO2 warming is amplified
+**$(fb_stats[3])x** to about **$(fb_stats[4]) C** per CO2
+doubling. Slide f past 0.8 and the curve rockets upward -- near runaway, a tiny change in
+the feedbacks means an enormous change in the outcome. That is exactly why climate
+sensitivity is so hard to pin down.
+"""
 
 # ╔═╡ d3a00007-0000-4000-8000-000000000007
 md"""
@@ -372,7 +378,8 @@ version = "1.64.0+1"
 # ╠═d3a00003-0000-4000-8000-000000000003
 # ╟─d3a00004-0000-4000-8000-000000000004
 # ╠═d3a00005-0000-4000-8000-000000000005
-# ╟─d3a00006-0000-4000-8000-000000000006
+# ╠═d3a00006-0000-4000-8000-000000000006
+# ╟─d3a00016-0000-4000-8000-000000000016
 # ╟─d3a00007-0000-4000-8000-000000000007
 # ╟─d3a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

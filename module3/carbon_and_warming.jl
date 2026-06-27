@@ -90,7 +90,10 @@ let
 end
 
 # ╔═╡ d6a00006-0000-4000-8000-000000000006
-let
+cw_stats = let
+    # final CO2 + temperature in a SEPARATE bond-dependent cell so the markdown below
+    # interpolates them live (values inside a markdown cell's own `let` bake to the
+    # slider defaults).
     A = 214.6
     B = 1.77
     C = 51.0
@@ -104,13 +107,16 @@ let
         dT = (absorbed - (A + B * T) + forcing) / C
         T = T + dT
     end
-    md"""**In $(nyears) years:** CO2 reaches about **$(floor(co2)) ppm** and the planet warms to
-    about **$(floor(T * 10.0) / 10.0) C** -- that is **$(floor((T - 14.0) * 10.0) / 10.0) C**
-    above pre-industrial. Slide emissions toward 0 and the curve bends flat; keep them high and
-    it sails past the 2 C and 3 C guardrails. The future temperature is, quite literally, a
-    choice of slope.
-    """
+    (floor(co2), floor(T * 10.0) / 10.0, floor((T - 14.0) * 10.0) / 10.0)
 end
+
+# ╔═╡ d6a00016-0000-4000-8000-000000000016
+md"""**In $(nyears) years:** CO2 reaches about **$(cw_stats[1]) ppm** and the planet warms to
+about **$(cw_stats[2]) C** -- that is **$(cw_stats[3]) C**
+above pre-industrial. Slide emissions toward 0 and the curve bends flat; keep them high and
+it sails past the 2 C and 3 C guardrails. The future temperature is, quite literally, a
+choice of slope.
+"""
 
 # ╔═╡ d6a00007-0000-4000-8000-000000000007
 md"""
@@ -391,7 +397,8 @@ version = "1.64.0+1"
 # ╠═d6a00003-0000-4000-8000-000000000003
 # ╟─d6a00004-0000-4000-8000-000000000004
 # ╠═d6a00005-0000-4000-8000-000000000005
-# ╟─d6a00006-0000-4000-8000-000000000006
+# ╠═d6a00006-0000-4000-8000-000000000006
+# ╟─d6a00016-0000-4000-8000-000000000016
 # ╟─d6a00007-0000-4000-8000-000000000007
 # ╟─d6a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001

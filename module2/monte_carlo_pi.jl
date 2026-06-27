@@ -88,8 +88,10 @@ let
 end
 
 # ╔═╡ c3a00006-0000-4000-8000-000000000006
-let
-    # the final estimate after all the darts
+mc_stats = let
+    # the final estimate, computed in a SEPARATE bond-dependent cell so the markdown
+    # below interpolates it live (values inside a markdown cell's own `let` bake to
+    # the slider defaults).
     s = (seed * 2654435761 + 12345) % 2147483647
     if s == 0
         s = 1
@@ -109,11 +111,14 @@ let
     if err < 0.0
         err = -err
     end
-    md"""**Estimate from $(ndarts) darts: $(floor(est * 100000.0) / 100000.0)**
-    (true value 3.14159...). Off by about **$(floor(err * 100000.0) / 100000.0)**.
-    Quadruple the darts and the error only roughly halves -- that is the 1/sqrt(N) law.
-    """
+    (floor(est * 100000.0) / 100000.0, floor(err * 100000.0) / 100000.0)
 end
+
+# ╔═╡ c3a00016-0000-4000-8000-000000000016
+md"""**Estimate from $(ndarts) darts: $(mc_stats[1])**
+(true value 3.14159...). Off by about **$(mc_stats[2])**.
+Quadruple the darts and the error only roughly halves -- that is the 1/sqrt(N) law.
+"""
 
 # ╔═╡ c3a00007-0000-4000-8000-000000000007
 md"""
@@ -396,7 +401,8 @@ version = "1.64.0+1"
 # ╠═c3a00003-0000-4000-8000-000000000003
 # ╟─c3a00004-0000-4000-8000-000000000004
 # ╠═c3a00005-0000-4000-8000-000000000005
-# ╟─c3a00006-0000-4000-8000-000000000006
+# ╠═c3a00006-0000-4000-8000-000000000006
+# ╟─c3a00016-0000-4000-8000-000000000016
 # ╟─c3a00007-0000-4000-8000-000000000007
 # ╟─c3a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001
