@@ -13,3 +13,7 @@ title = "Images, Transformations & Abstractions"
 [[modules]]
 dir   = "module2"
 title = "Social Science & Data Science"
+
+[[modules]]
+dir   = "module3"
+title = "Climate Science"

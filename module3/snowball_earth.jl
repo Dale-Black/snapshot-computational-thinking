@@ -2,12 +2,12 @@
 # v0.20.28
 
 #> [frontmatter]
-#> chapter = "2"
-#> section = "9"
-#> title = "Reliability: When Does a System Fail?"
-#> tags = ["lecture", "module2", "track_data", "simulation", "interactive"]
+#> chapter = "3"
+#> section = "4"
+#> title = "Snowball Earth & Tipping Points"
+#> tags = ["lecture", "module3", "track_climate", "modeling", "interactive"]
 #> layout = "layout.jlhtml"
-#> description = "A chain is only as strong as its weakest link. Simulate thousands of machines whose parts fail at random and watch how adding more parts in series makes the whole thing fail sooner. Monte Carlo reliability, live in your browser as WebAssembly."
+#> description = "Ice reflects sunlight, so a colder Earth gets colder still — a feedback so strong the planet can flip into a frozen state and stay there. Push the Sun and the starting temperature and discover the climate's two stable worlds, live in your browser as WebAssembly."
 #> license = "MIT"
 
 using Markdown
@@ -25,147 +25,131 @@ macro bind(def, element)
     #! format: on
 end
 
-# ╔═╡ c9a00002-0000-4000-8000-000000000002
+# ╔═╡ d4a00002-0000-4000-8000-000000000002
 begin
     using PlutoUI, WasmMakie
 end
 
-# ╔═╡ c9a00001-0000-4000-8000-000000000001
-md"""
-# Reliability: when does a system fail?
-
-A machine is built from many parts, and it keeps working only while **every** part still
-works — the parts are *in series*, like links in a chain. Each part fails at some random
-time. So when does the whole machine fail? At the moment its **first** part gives out.
-
-This is a question you answer by **simulation**: build thousands of virtual machines, fail
-their parts at random, and look at the distribution of when each machine died. Slide the
-number of parts up and watch a sobering fact emerge — more parts means the system fails
-*sooner*, because there are more ways for it to break. All live in WebAssembly.
-"""
-
-# ╔═╡ c9a00003-0000-4000-8000-000000000003
+# ╔═╡ d4a00003-0000-4000-8000-000000000003
 PlutoUI.TableOfContents(aside = true)
 
-# ╔═╡ c9a00004-0000-4000-8000-000000000004
+# ╔═╡ d4a00001-0000-4000-8000-000000000001
 md"""
-number of parts (in series) = $(@bind nparts Slider(1:1:12, show_value=true, default=4))
+# Snowball Earth and tipping points
 
-per-part failure rate = $(@bind ratei Slider(2:1:30, show_value=true, default=10)) ÷100
+Add one ingredient to the Energy Balance Model and the climate develops a split personality.
+The ingredient is the **ice–albedo feedback**: ice and snow are bright and reflect sunlight, so
 
-number of machines simulated = $(@bind nsims Slider(500:500:8000, show_value=true, default=3000))
+> a colder planet grows more ice → reflects more sunlight → gets colder still.
+
+This runaway can flip the Earth into a completely frozen **Snowball** state — and the geological
+record says it really happened, more than once. The remarkable part is that *the same Sun and the
+same CO₂* can support **two stable climates**: a warm one near 14 °C and a frozen one far below.
+Which one you end up in depends on where you start and how strong the Sun is.
+
+Set the starting temperature and the solar strength below, and watch the planet fall into one
+basin or the other — a live demonstration of a **tipping point** in WebAssembly.
 """
 
-# ╔═╡ c9a00005-0000-4000-8000-000000000005
+# ╔═╡ d4a00004-0000-4000-8000-000000000004
+md"""
+starting temperature (°C) = $(@bind t0i Slider(-60:5:30, show_value=true, default=14))
+
+solar strength (% of today) = $(@bind solari Slider(85:1:115, show_value=true, default=100))
+
+years to simulate = $(@bind nyears Slider(20:10:400, show_value=true, default=200))
+"""
+
+# ╔═╡ d4a00005-0000-4000-8000-000000000005
 let
-    # one flat loop over every part of every machine. Each part's lifetime is an
-    # exponential random variable, t = -ln(u)/rate; a machine fails at its EARLIEST
-    # part failure. Histogram those system failure times.
-    rate = Float64(ratei) / 100.0
-    nbins = 40
-    hi = 6.0 / (rate * Float64(nparts))     # a few mean-lifetimes wide
-    counts = Vector{Float64}(undef, nbins)
-    for b in 1:nbins
-        counts[b] = 0.0
+    # Energy Balance Model with a temperature-dependent albedo. Everything bonded is turned
+    # into a local before the loop; the year loop computes albedo from the CURRENT
+    # temperature (a local), so ice grows and shrinks as the planet warms and cools.
+    A = 214.6
+    B = 1.77
+    C = 51.0
+    S = Float64(solari) / 100.0 * 1368.0
+    T = Float64(t0i)
+
+    Ts = Vector{Float64}(undef, nyears + 1)
+    ts = Vector{Float64}(undef, nyears + 1)
+    Ts[1] = T
+    ts[1] = 0.0
+    for y in 1:nyears
+        alb = 0.3
+        if T < 0.0
+            alb = 0.3 + 0.3 * (0.0 - T) / 10.0   # icier as it gets colder
+        end
+        if alb > 0.6
+            alb = 0.6                             # fully ice-covered
+        end
+        absorbed = (1.0 - alb) * S / 4.0
+        dT = (absorbed - (A + B * T)) / C
+        T = T + dT
+        Ts[y + 1] = T
+        ts[y + 1] = Float64(y)
     end
-    s = 99173
-    mn = hi * 1000.0      # earliest failure so far in the current machine
-    c = 0
-    grand = nsims * nparts
-    for t in 1:grand
-        s = (s * 16807) % 2147483647
-        u = Float64(s) / 2147483647.0
-        if u < 0.0000001
-            u = 0.0000001
-        end
-        life = -log(u) / rate          # this part's lifetime
-        if life < mn
-            mn = life
-        end
-        c += 1
-        if c == nparts                 # the whole machine has now been assembled
-            frac = mn / hi
-            b = Int64(floor(frac * Float64(nbins))) + 1
-            if b < 1
-                b = 1
-            end
-            if b > nbins
-                b = nbins
-            end
-            counts[b] += 1.0
-            mn = hi * 1000.0
-            c = 0
-        end
-    end
-    fig = Figure(size = (600, 340))
+
+    fig = Figure(size = (600, 360))
     ax = Axis(fig[1, 1])
-    for b in 1:nbins
-        center = hi * (Float64(b) - 0.5) / Float64(nbins)
-        lines!(ax, [center, center], [0.0, counts[b]])    # a histogram bar
-    end
+    lines!(ax, [0.0, Float64(nyears)], [14.0, 14.0])     # the warm equilibrium
+    lines!(ax, [0.0, Float64(nyears)], [0.0, 0.0])       # freezing line
+    lines!(ax, ts, Ts)                                    # the planet's fate
     fig
 end
 
-# ╔═╡ c9a00006-0000-4000-8000-000000000006
+# ╔═╡ d4a00006-0000-4000-8000-000000000006
 let
-    rate = Float64(ratei) / 100.0
-    s = 99173
-    mn = 1.0e18
-    c = 0
-    total = 0.0
-    done = 0
-    grand = nsims * nparts
-    for t in 1:grand
-        s = (s * 16807) % 2147483647
-        u = Float64(s) / 2147483647.0
-        if u < 0.0000001
-            u = 0.0000001
+    A = 214.6
+    B = 1.77
+    C = 51.0
+    S = Float64(solari) / 100.0 * 1368.0
+    T = Float64(t0i)
+    for y in 1:nyears
+        alb = 0.3
+        if T < 0.0
+            alb = 0.3 + 0.3 * (0.0 - T) / 10.0
         end
-        life = -log(u) / rate
-        if life < mn
-            mn = life
+        if alb > 0.6
+            alb = 0.6
         end
-        c += 1
-        if c == nparts
-            total += mn
-            done += 1
-            mn = 1.0e18
-            c = 0
-        end
+        absorbed = (1.0 - alb) * S / 4.0
+        dT = (absorbed - (A + B * T)) / C
+        T = T + dT
     end
-    avg = total / Float64(done)
-    one_part = 1.0 / rate
-    md"""**Average time to first failure:** about **$(floor(avg * 100.0) / 100.0)**
-    (in the same units), versus **$(floor(one_part * 100.0) / 100.0)** for a single part on
-    its own. With $(nparts) parts in series the machine fails roughly $(nparts)x sooner --
-    its failure rate is the SUM of the parts' rates. Redundancy fights this; series chains
-    make it worse.
+    state = "a warm, ice-free world"
+    if T < -5.0
+        state = "a frozen Snowball Earth"
+    end
+    md"""**Final temperature: $(floor(T * 10.0) / 10.0) °C** -- $(state). Start just a few
+    degrees colder, or dim the Sun a percent or two, and the planet can tip irreversibly into
+    the frozen basin: once ice covers everything, it reflects so much sunlight that even
+    today's Sun struggles to melt it back. Two stable worlds, one tipping point between them.
     """
 end
 
-# ╔═╡ c9a00007-0000-4000-8000-000000000007
+# ╔═╡ d4a00007-0000-4000-8000-000000000007
 md"""
-## The lesson of series systems
+## Tipping points and hysteresis
 
-There is a clean law hiding in the histogram: when independent parts each fail at a constant
-rate, a series system's failure rate is the **sum** of the parts' rates. Ten parts that each
-last 100 hours on average give a machine that lasts only about 10. This is why complex
-hardware is *hard* to keep running, and why engineers add **redundancy** — parallel backups,
-so the system survives until the *last* copy fails instead of the first.
+The deepest lesson here is **hysteresis**: the path in differs from the path out. Slowly dim the
+Sun and the warm Earth cools gently — until, at a threshold, it *jumps* to the Snowball state.
+Brighten the Sun back to where it started and the Earth stays frozen; you have to push it far
+*past* the original brightness before it jumps back to warm. The system remembers its history.
 
-More broadly, this is reliability engineering by **Monte Carlo**: when the math of combining
-many random lifetimes gets hairy, simulate it. The same approach prices insurance, plans
-spare parts, and stress-tests power grids.
+This is the defining feature of climate **tipping points** — ice sheets, the Atlantic
+circulation, the Amazon — and why they are so dangerous: crossing one is easy and reversing it
+is not. A simple feedback in a one-line model already shows the whole behaviour.
 """
 
-# ╔═╡ c9a00008-0000-4000-8000-000000000008
+# ╔═╡ d4a00008-0000-4000-8000-000000000008
 md"""
 ## Appendix
 
-The MIT lecture uses `Distributions.jl` / `StatsBase` / `Plots.jl`. WebAssembly can't run
-those in the browser, so part lifetimes come from an inline **Park-Miller** generator via
-`t = -ln(u)/rate` (the exponential distribution) and the histogram is drawn with
-**WasmMakie**. The series-failure law is exactly the textbook result.
+The Energy Balance Model from the earlier lessons, extended with a temperature-dependent
+albedo, stepped one year at a time and drawn with **WasmMakie** — all in-browser WebAssembly.
+The two stable states and the tipping behaviour are exactly those in the MIT Snowball-Earth
+notebook.
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -419,13 +403,13 @@ version = "1.64.0+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─c9a00001-0000-4000-8000-000000000001
-# ╠═c9a00002-0000-4000-8000-000000000002
-# ╠═c9a00003-0000-4000-8000-000000000003
-# ╟─c9a00004-0000-4000-8000-000000000004
-# ╠═c9a00005-0000-4000-8000-000000000005
-# ╟─c9a00006-0000-4000-8000-000000000006
-# ╟─c9a00007-0000-4000-8000-000000000007
-# ╟─c9a00008-0000-4000-8000-000000000008
+# ╟─d4a00001-0000-4000-8000-000000000001
+# ╠═d4a00002-0000-4000-8000-000000000002
+# ╠═d4a00003-0000-4000-8000-000000000003
+# ╟─d4a00004-0000-4000-8000-000000000004
+# ╠═d4a00005-0000-4000-8000-000000000005
+# ╟─d4a00006-0000-4000-8000-000000000006
+# ╟─d4a00007-0000-4000-8000-000000000007
+# ╟─d4a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

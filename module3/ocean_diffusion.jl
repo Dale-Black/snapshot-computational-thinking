@@ -2,12 +2,12 @@
 # v0.20.28
 
 #> [frontmatter]
-#> chapter = "2"
-#> section = "9"
-#> title = "Reliability: When Does a System Fail?"
-#> tags = ["lecture", "module2", "track_data", "simulation", "interactive"]
+#> chapter = "3"
+#> section = "5"
+#> title = "Heat Diffusion in the Ocean"
+#> tags = ["lecture", "module3", "track_climate", "numerics", "interactive"]
 #> layout = "layout.jlhtml"
-#> description = "A chain is only as strong as its weakest link. Simulate thousands of machines whose parts fail at random and watch how adding more parts in series makes the whole thing fail sooner. Monte Carlo reliability, live in your browser as WebAssembly."
+#> description = "Drop a patch of warm water in a cold sea and it spreads and fades. This is the diffusion equation — the same PDE behind heat flow everywhere — solved on a grid by hand, with sliders for how fast and how long it spreads, live in your browser as WebAssembly."
 #> license = "MIT"
 
 using Markdown
@@ -25,147 +25,146 @@ macro bind(def, element)
     #! format: on
 end
 
-# ╔═╡ c9a00002-0000-4000-8000-000000000002
+# ╔═╡ d5a00002-0000-4000-8000-000000000002
 begin
     using PlutoUI, WasmMakie
 end
 
-# ╔═╡ c9a00001-0000-4000-8000-000000000001
-md"""
-# Reliability: when does a system fail?
-
-A machine is built from many parts, and it keeps working only while **every** part still
-works — the parts are *in series*, like links in a chain. Each part fails at some random
-time. So when does the whole machine fail? At the moment its **first** part gives out.
-
-This is a question you answer by **simulation**: build thousands of virtual machines, fail
-their parts at random, and look at the distribution of when each machine died. Slide the
-number of parts up and watch a sobering fact emerge — more parts means the system fails
-*sooner*, because there are more ways for it to break. All live in WebAssembly.
-"""
-
-# ╔═╡ c9a00003-0000-4000-8000-000000000003
+# ╔═╡ d5a00003-0000-4000-8000-000000000003
 PlutoUI.TableOfContents(aside = true)
 
-# ╔═╡ c9a00004-0000-4000-8000-000000000004
+# ╔═╡ d5a00001-0000-4000-8000-000000000001
 md"""
-number of parts (in series) = $(@bind nparts Slider(1:1:12, show_value=true, default=4))
+# Heat diffusion in the ocean
 
-per-part failure rate = $(@bind ratei Slider(2:1:30, show_value=true, default=10)) ÷100
+The ocean moves heat around, and the simplest way it does so is **diffusion**: heat flows from
+warm to cold, smoothing out differences. Drop a patch of warm water into a cold sea and it
+spreads, flattens, and fades. The rule governing it is the **diffusion equation**, one of the
+most important partial differential equations in all of science:
 
-number of machines simulated = $(@bind nsims Slider(500:500:8000, show_value=true, default=3000))
+$\frac{\partial T}{\partial t} = D\,\frac{\partial^2 T}{\partial x^2}.$
+
+We can't solve a PDE symbolically in general, so we **discretize**: chop space into a grid,
+approximate the curvature `∂²T/∂x²` by differences between neighbours, and step time forward.
+Below, a warm block diffuses along a line — set the diffusivity and the elapsed time and watch
+it spread, computed live on a grid in WebAssembly.
 """
 
-# ╔═╡ c9a00005-0000-4000-8000-000000000005
+# ╔═╡ d5a00004-0000-4000-8000-000000000004
+md"""
+diffusivity = $(@bind diffi Slider(10:10:220, show_value=true, default=120)) ÷100
+
+time steps elapsed = $(@bind nsteps Slider(0:20:1200, show_value=true, default=400))
+"""
+
+# ╔═╡ d5a00005-0000-4000-8000-000000000005
 let
-    # one flat loop over every part of every machine. Each part's lifetime is an
-    # exponential random variable, t = -ln(u)/rate; a machine fails at its EARLIEST
-    # part failure. Histogram those system failure times.
-    rate = Float64(ratei) / 100.0
-    nbins = 40
-    hi = 6.0 / (rate * Float64(nparts))     # a few mean-lifetimes wide
-    counts = Vector{Float64}(undef, nbins)
-    for b in 1:nbins
-        counts[b] = 0.0
-    end
-    s = 99173
-    mn = hi * 1000.0      # earliest failure so far in the current machine
-    c = 0
-    grand = nsims * nparts
-    for t in 1:grand
-        s = (s * 16807) % 2147483647
-        u = Float64(s) / 2147483647.0
-        if u < 0.0000001
-            u = 0.0000001
-        end
-        life = -log(u) / rate          # this part's lifetime
-        if life < mn
-            mn = life
-        end
-        c += 1
-        if c == nparts                 # the whole machine has now been assembled
-            frac = mn / hi
-            b = Int64(floor(frac * Float64(nbins))) + 1
-            if b < 1
-                b = 1
+    # finite-difference heat equation on a 1-D grid. The bonds (diffusivity, time) become
+    # locals before the loops; the update uses only the local D, so the nested time/space
+    # stepping stays cleanly wasm-compilable.
+    nx = 61
+    D = Float64(diffi) / 100.0
+    dt = 0.2
+    xs = Vector{Float64}(undef, nx)
+    T0 = Vector{Float64}(undef, nx)
+    T = Vector{Float64}(undef, nx)
+    Tn = Vector{Float64}(undef, nx)
+    Tmid = Vector{Float64}(undef, nx)
+    for i in 1:nx
+        xs[i] = Float64(i)
+        v = 0.0
+        if i > 20
+            if i < 42
+                v = 1.0          # a warm block in the middle third
             end
-            if b > nbins
-                b = nbins
+        end
+        T0[i] = v
+        T[i] = v
+        Tmid[i] = v
+    end
+    half = div(nsteps, 2)
+    for step in 1:nsteps
+        for i in 2:(nx - 1)
+            Tn[i] = T[i] + D * dt * (T[i + 1] - 2.0 * T[i] + T[i - 1])
+        end
+        Tn[1] = 0.0
+        Tn[nx] = 0.0
+        for i in 1:nx
+            T[i] = Tn[i]
+        end
+        if step == half
+            for i in 1:nx
+                Tmid[i] = T[i]
             end
-            counts[b] += 1.0
-            mn = hi * 1000.0
-            c = 0
         end
     end
-    fig = Figure(size = (600, 340))
+
+    fig = Figure(size = (620, 340))
     ax = Axis(fig[1, 1])
-    for b in 1:nbins
-        center = hi * (Float64(b) - 0.5) / Float64(nbins)
-        lines!(ax, [center, center], [0.0, counts[b]])    # a histogram bar
-    end
+    lines!(ax, xs, T0)      # the initial warm block
+    lines!(ax, xs, Tmid)    # halfway through
+    lines!(ax, xs, T)       # fully spread out
     fig
 end
 
-# ╔═╡ c9a00006-0000-4000-8000-000000000006
+# ╔═╡ d5a00006-0000-4000-8000-000000000006
 let
-    rate = Float64(ratei) / 100.0
-    s = 99173
-    mn = 1.0e18
-    c = 0
-    total = 0.0
-    done = 0
-    grand = nsims * nparts
-    for t in 1:grand
-        s = (s * 16807) % 2147483647
-        u = Float64(s) / 2147483647.0
-        if u < 0.0000001
-            u = 0.0000001
+    nx = 61
+    D = Float64(diffi) / 100.0
+    dt = 0.2
+    T = Vector{Float64}(undef, nx)
+    Tn = Vector{Float64}(undef, nx)
+    for i in 1:nx
+        v = 0.0
+        if i > 20
+            if i < 42
+                v = 1.0
+            end
         end
-        life = -log(u) / rate
-        if life < mn
-            mn = life
+        T[i] = v
+    end
+    for step in 1:nsteps
+        for i in 2:(nx - 1)
+            Tn[i] = T[i] + D * dt * (T[i + 1] - 2.0 * T[i] + T[i - 1])
         end
-        c += 1
-        if c == nparts
-            total += mn
-            done += 1
-            mn = 1.0e18
-            c = 0
+        Tn[1] = 0.0
+        Tn[nx] = 0.0
+        for i in 1:nx
+            T[i] = Tn[i]
         end
     end
-    avg = total / Float64(done)
-    one_part = 1.0 / rate
-    md"""**Average time to first failure:** about **$(floor(avg * 100.0) / 100.0)**
-    (in the same units), versus **$(floor(one_part * 100.0) / 100.0)** for a single part on
-    its own. With $(nparts) parts in series the machine fails roughly $(nparts)x sooner --
-    its failure rate is the SUM of the parts' rates. Redundancy fights this; series chains
-    make it worse.
+    peak = T[31]
+    md"""**The peak (center) temperature has fallen to $(floor(peak * 1000.0) / 1000.0)** from
+    its starting value of 1.0 as the heat spread outward. Raise the diffusivity or let more
+    time pass and the block flattens faster -- diffusion never piles heat up, it only ever
+    smooths it out. Push diffusivity past about 2.5 and the simple scheme goes unstable (the
+    numbers blow up) -- a first taste of why choosing the time step matters in PDE solvers.
     """
 end
 
-# ╔═╡ c9a00007-0000-4000-8000-000000000007
+# ╔═╡ d5a00007-0000-4000-8000-000000000007
 md"""
-## The lesson of series systems
+## From a grid to a climate
 
-There is a clean law hiding in the histogram: when independent parts each fail at a constant
-rate, a series system's failure rate is the **sum** of the parts' rates. Ten parts that each
-last 100 hours on average give a machine that lasts only about 10. This is why complex
-hardware is *hard* to keep running, and why engineers add **redundancy** — parallel backups,
-so the system survives until the *last* copy fails instead of the first.
+This little solver is the seed of a real ocean model. Add a flow that *carries* heat along
+(**advection**) and you get the advection-diffusion equation that moves warmth from the tropics
+toward the poles. Do it on a 2-D or 3-D grid, couple it to the atmosphere, and you have the
+circulation models behind climate projections.
 
-More broadly, this is reliability engineering by **Monte Carlo**: when the math of combining
-many random lifetimes gets hairy, simulate it. The same approach prices insurance, plans
-spare parts, and stress-tests power grids.
+The technique you just used — replace derivatives with differences between grid points, then
+march forward in time — is how essentially *every* PDE in physics and engineering gets solved
+on a computer. And the stability catch you can trigger with the slider is a real and famous
+constraint (the CFL condition) that every such solver must respect.
 """
 
-# ╔═╡ c9a00008-0000-4000-8000-000000000008
+# ╔═╡ d5a00008-0000-4000-8000-000000000008
 md"""
 ## Appendix
 
-The MIT lecture uses `Distributions.jl` / `StatsBase` / `Plots.jl`. WebAssembly can't run
-those in the browser, so part lifetimes come from an inline **Park-Miller** generator via
-`t = -ln(u)/rate` (the exponential distribution) and the histogram is drawn with
-**WasmMakie**. The series-failure law is exactly the textbook result.
+A hand-written finite-difference solver for the 1-D diffusion equation, marched forward on a
+61-point grid and drawn with **WasmMakie** — entirely in-browser WebAssembly, no `Plots.jl` and
+no PDE library. The method and the stability limit are the standard ones from the MIT
+advection-diffusion lecture.
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -419,13 +418,13 @@ version = "1.64.0+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─c9a00001-0000-4000-8000-000000000001
-# ╠═c9a00002-0000-4000-8000-000000000002
-# ╠═c9a00003-0000-4000-8000-000000000003
-# ╟─c9a00004-0000-4000-8000-000000000004
-# ╠═c9a00005-0000-4000-8000-000000000005
-# ╟─c9a00006-0000-4000-8000-000000000006
-# ╟─c9a00007-0000-4000-8000-000000000007
-# ╟─c9a00008-0000-4000-8000-000000000008
+# ╟─d5a00001-0000-4000-8000-000000000001
+# ╠═d5a00002-0000-4000-8000-000000000002
+# ╠═d5a00003-0000-4000-8000-000000000003
+# ╟─d5a00004-0000-4000-8000-000000000004
+# ╠═d5a00005-0000-4000-8000-000000000005
+# ╟─d5a00006-0000-4000-8000-000000000006
+# ╟─d5a00007-0000-4000-8000-000000000007
+# ╟─d5a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

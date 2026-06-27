@@ -2,12 +2,12 @@
 # v0.20.28
 
 #> [frontmatter]
-#> chapter = "2"
-#> section = "9"
-#> title = "Reliability: When Does a System Fail?"
-#> tags = ["lecture", "module2", "track_data", "simulation", "interactive"]
+#> chapter = "3"
+#> section = "2"
+#> title = "The Greenhouse Effect"
+#> tags = ["lecture", "module3", "track_climate", "modeling", "interactive"]
 #> layout = "layout.jlhtml"
-#> description = "A chain is only as strong as its weakest link. Simulate thousands of machines whose parts fail at random and watch how adding more parts in series makes the whole thing fail sooner. Monte Carlo reliability, live in your browser as WebAssembly."
+#> description = "Why does more CO₂ mean a hotter planet — and why does each extra ton matter less than the last? Trace the equilibrium-temperature curve against CO₂ and find the logarithmic law of greenhouse warming, live in your browser as WebAssembly."
 #> license = "MIT"
 
 using Markdown
@@ -25,147 +25,99 @@ macro bind(def, element)
     #! format: on
 end
 
-# ╔═╡ c9a00002-0000-4000-8000-000000000002
+# ╔═╡ d2a00002-0000-4000-8000-000000000002
 begin
     using PlutoUI, WasmMakie
 end
 
-# ╔═╡ c9a00001-0000-4000-8000-000000000001
-md"""
-# Reliability: when does a system fail?
-
-A machine is built from many parts, and it keeps working only while **every** part still
-works — the parts are *in series*, like links in a chain. Each part fails at some random
-time. So when does the whole machine fail? At the moment its **first** part gives out.
-
-This is a question you answer by **simulation**: build thousands of virtual machines, fail
-their parts at random, and look at the distribution of when each machine died. Slide the
-number of parts up and watch a sobering fact emerge — more parts means the system fails
-*sooner*, because there are more ways for it to break. All live in WebAssembly.
-"""
-
-# ╔═╡ c9a00003-0000-4000-8000-000000000003
+# ╔═╡ d2a00003-0000-4000-8000-000000000003
 PlutoUI.TableOfContents(aside = true)
 
-# ╔═╡ c9a00004-0000-4000-8000-000000000004
+# ╔═╡ d2a00001-0000-4000-8000-000000000001
 md"""
-number of parts (in series) = $(@bind nparts Slider(1:1:12, show_value=true, default=4))
+# The greenhouse effect
 
-per-part failure rate = $(@bind ratei Slider(2:1:30, show_value=true, default=10)) ÷100
+CO₂ is transparent to incoming sunlight but absorbs the **infrared heat** the Earth radiates
+back toward space. More CO₂ means more of that outgoing heat is caught and re-emitted
+downward, so the surface must warm until balance is restored. That is the greenhouse effect.
 
-number of machines simulated = $(@bind nsims Slider(500:500:8000, show_value=true, default=3000))
+There is a crucial wrinkle: the warming is **logarithmic** in CO₂. Each *doubling* adds about
+the same push (roughly +3.7 W/m², worth a couple of degrees), so going 280 → 560 ppm warms
+as much as 560 → 1120. The first molecules matter most; the curve bends over.
+
+Below, sweep the CO₂ dial and watch the equilibrium-temperature curve, computed live in
+WebAssembly from the Energy Balance Model.
 """
 
-# ╔═╡ c9a00005-0000-4000-8000-000000000005
+# ╔═╡ d2a00004-0000-4000-8000-000000000004
+md"""
+CO₂ concentration (ppm) = $(@bind co2ppm Slider(280:20:1400, show_value=true, default=420))
+"""
+
+# ╔═╡ d2a00005-0000-4000-8000-000000000005
 let
-    # one flat loop over every part of every machine. Each part's lifetime is an
-    # exponential random variable, t = -ln(u)/rate; a machine fails at its EARLIEST
-    # part failure. Histogram those system failure times.
-    rate = Float64(ratei) / 100.0
-    nbins = 40
-    hi = 6.0 / (rate * Float64(nparts))     # a few mean-lifetimes wide
-    counts = Vector{Float64}(undef, nbins)
-    for b in 1:nbins
-        counts[b] = 0.0
+    # sweep CO2 from 280 to 1400 ppm and plot the equilibrium temperature of the Energy
+    # Balance Model at each level (one flat loop). The equilibrium solves dT/dt = 0:
+    #   T_eq = (absorbed - A + 5.35 ln(CO2/280)) / B
+    absorbed = 239.4
+    A = 214.6
+    B = 1.77
+    npts = 113
+    cx = Vector{Float64}(undef, npts)
+    ty = Vector{Float64}(undef, npts)
+    for k in 1:npts
+        co2 = 280.0 + 10.0 * Float64(k - 1)
+        teq = (absorbed - A + 5.35 * log(co2 / 280.0)) / B
+        cx[k] = co2
+        ty[k] = teq
     end
-    s = 99173
-    mn = hi * 1000.0      # earliest failure so far in the current machine
-    c = 0
-    grand = nsims * nparts
-    for t in 1:grand
-        s = (s * 16807) % 2147483647
-        u = Float64(s) / 2147483647.0
-        if u < 0.0000001
-            u = 0.0000001
-        end
-        life = -log(u) / rate          # this part's lifetime
-        if life < mn
-            mn = life
-        end
-        c += 1
-        if c == nparts                 # the whole machine has now been assembled
-            frac = mn / hi
-            b = Int64(floor(frac * Float64(nbins))) + 1
-            if b < 1
-                b = 1
-            end
-            if b > nbins
-                b = nbins
-            end
-            counts[b] += 1.0
-            mn = hi * 1000.0
-            c = 0
-        end
-    end
-    fig = Figure(size = (600, 340))
+    # where the slider currently sits
+    teq_now = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
+
+    fig = Figure(size = (600, 350))
     ax = Axis(fig[1, 1])
-    for b in 1:nbins
-        center = hi * (Float64(b) - 0.5) / Float64(nbins)
-        lines!(ax, [center, center], [0.0, counts[b]])    # a histogram bar
-    end
+    lines!(ax, [280.0, 1400.0], [14.0, 14.0])               # pre-industrial baseline
+    lines!(ax, cx, ty)                                       # the warming curve
+    lines!(ax, [Float64(co2ppm), Float64(co2ppm)], [10.0, teq_now])  # marker at the slider
     fig
 end
 
-# ╔═╡ c9a00006-0000-4000-8000-000000000006
+# ╔═╡ d2a00006-0000-4000-8000-000000000006
 let
-    rate = Float64(ratei) / 100.0
-    s = 99173
-    mn = 1.0e18
-    c = 0
-    total = 0.0
-    done = 0
-    grand = nsims * nparts
-    for t in 1:grand
-        s = (s * 16807) % 2147483647
-        u = Float64(s) / 2147483647.0
-        if u < 0.0000001
-            u = 0.0000001
-        end
-        life = -log(u) / rate
-        if life < mn
-            mn = life
-        end
-        c += 1
-        if c == nparts
-            total += mn
-            done += 1
-            mn = 1.0e18
-            c = 0
-        end
-    end
-    avg = total / Float64(done)
-    one_part = 1.0 / rate
-    md"""**Average time to first failure:** about **$(floor(avg * 100.0) / 100.0)**
-    (in the same units), versus **$(floor(one_part * 100.0) / 100.0)** for a single part on
-    its own. With $(nparts) parts in series the machine fails roughly $(nparts)x sooner --
-    its failure rate is the SUM of the parts' rates. Redundancy fights this; series chains
-    make it worse.
+    absorbed = 239.4
+    A = 214.6
+    B = 1.77
+    teq = (absorbed - A + 5.35 * log(Float64(co2ppm) / 280.0)) / B
+    teq2 = (absorbed - A + 5.35 * log(2.0 * Float64(co2ppm) / 280.0)) / B
+    md"""**At $(co2ppm) ppm:** equilibrium temperature is about
+    **$(floor(teq * 10.0) / 10.0) °C** (warming of **$(floor((teq - 14.0) * 10.0) / 10.0) °C**).
+    Doubling from here to $(2 * co2ppm) ppm adds only another
+    **$(floor((teq2 - teq) * 10.0) / 10.0) °C** -- the same step in temperature for *any*
+    doubling. That is the logarithmic signature of the greenhouse effect.
     """
 end
 
-# ╔═╡ c9a00007-0000-4000-8000-000000000007
+# ╔═╡ d2a00007-0000-4000-8000-000000000007
 md"""
-## The lesson of series systems
+## The logarithm is good news and bad news
 
-There is a clean law hiding in the histogram: when independent parts each fail at a constant
-rate, a series system's failure rate is the **sum** of the parts' rates. Ten parts that each
-last 100 hours on average give a machine that lasts only about 10. This is why complex
-hardware is *hard* to keep running, and why engineers add **redundancy** — parallel backups,
-so the system survives until the *last* copy fails instead of the first.
+**Good news:** runaway is not automatic — because warming is logarithmic, you cannot get an
+arbitrarily large effect from a little more CO₂. **Bad news:** the flip side is that *cutting*
+emissions a little does little; only large reductions move the curve meaningfully, and the CO₂
+we've added lingers for centuries.
 
-More broadly, this is reliability engineering by **Monte Carlo**: when the math of combining
-many random lifetimes gets hairy, simulate it. The same approach prices insurance, plans
-spare parts, and stress-tests power grids.
+This single curve sets the stakes for climate policy. The next lessons add what makes the real
+planet more sensitive than this bare model — **feedbacks** — and what could make it lurch to a
+completely different state — **tipping points**.
 """
 
-# ╔═╡ c9a00008-0000-4000-8000-000000000008
+# ╔═╡ d2a00008-0000-4000-8000-000000000008
 md"""
 ## Appendix
 
-The MIT lecture uses `Distributions.jl` / `StatsBase` / `Plots.jl`. WebAssembly can't run
-those in the browser, so part lifetimes come from an inline **Park-Miller** generator via
-`t = -ln(u)/rate` (the exponential distribution) and the histogram is drawn with
-**WasmMakie**. The series-failure law is exactly the textbook result.
+Built from the same Energy Balance Model as the previous lesson, solved at equilibrium across
+a sweep of CO₂ values. Computed with an inline logarithm and drawn with **WasmMakie**, so the
+whole curve is in-browser WebAssembly — no `Plots.jl`, no server.
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -419,13 +371,13 @@ version = "1.64.0+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─c9a00001-0000-4000-8000-000000000001
-# ╠═c9a00002-0000-4000-8000-000000000002
-# ╠═c9a00003-0000-4000-8000-000000000003
-# ╟─c9a00004-0000-4000-8000-000000000004
-# ╠═c9a00005-0000-4000-8000-000000000005
-# ╟─c9a00006-0000-4000-8000-000000000006
-# ╟─c9a00007-0000-4000-8000-000000000007
-# ╟─c9a00008-0000-4000-8000-000000000008
+# ╟─d2a00001-0000-4000-8000-000000000001
+# ╠═d2a00002-0000-4000-8000-000000000002
+# ╠═d2a00003-0000-4000-8000-000000000003
+# ╟─d2a00004-0000-4000-8000-000000000004
+# ╠═d2a00005-0000-4000-8000-000000000005
+# ╟─d2a00006-0000-4000-8000-000000000006
+# ╟─d2a00007-0000-4000-8000-000000000007
+# ╟─d2a00008-0000-4000-8000-000000000008
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

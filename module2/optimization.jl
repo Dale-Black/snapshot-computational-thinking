@@ -30,9 +30,6 @@ begin
     using PlutoUI, WasmMakie
 end
 
-# ╔═╡ c4a00003-0000-4000-8000-000000000003
-PlutoUI.TableOfContents(aside = true)
-
 # ╔═╡ c4a00001-0000-4000-8000-000000000001
 md"""
 # Optimization by gradient descent
@@ -49,6 +46,9 @@ leap right over the valley and bounce out. Below you can set the starting point 
 learning rate and watch the ball roll down a bumpy landscape, all live in WebAssembly.
 """
 
+# ╔═╡ c4a00003-0000-4000-8000-000000000003
+PlutoUI.TableOfContents(aside = true)
+
 # ╔═╡ c4a00004-0000-4000-8000-000000000004
 md"""
 ## A bumpy landscape
@@ -56,6 +56,38 @@ md"""
 We'll minimize `f(x) = 0.2 x⁴ − x² + 0.3 x`, a curve with two valleys. Gradient descent
 only ever feels the slope right under its feet, so *where it ends up depends on where it
 starts* — a first taste of local versus global minima.
+"""
+
+# ╔═╡ c4a00006-0000-4000-8000-000000000006
+md"""
+start x = $(@bind x0i Slider(-25:1:25, show_value=true, default=-18)) ÷10
+
+learning rate = $(@bind lri Slider(1:1:60, show_value=true, default=12)) ÷1000
+
+steps = $(@bind nsteps Slider(0:1:80, show_value=true, default=30))
+"""
+
+# ╔═╡ c4a00009-0000-4000-8000-000000000009
+md"""
+## Why this scales
+
+In one dimension you could just look at the graph. The power of gradient descent is that
+the *exact same loop* — evaluate the slope, step downhill — works in millions of
+dimensions, where you could never plot anything. That is how neural networks with
+billions of parameters are trained: follow the gradient, one small step at a time.
+
+The two dials you played with here are the two that matter everywhere: **where you
+start** (initialization) and **how big a step you take** (the learning rate).
+"""
+
+# ╔═╡ c4a0000a-0000-4000-8000-000000000010
+md"""
+## Appendix
+
+The MIT lecture reaches for `ForwardDiff.jl` / `Optim.jl` / `JuMP`. WebAssembly can't run
+those in the browser, so we compute the slope with a one-line **finite difference** and
+draw with **WasmMakie**. The algorithm — and the lessons about learning rate and local
+minima — are exactly the same.
 """
 
 # ╔═╡ c4a00005-0000-4000-8000-000000000005
@@ -69,15 +101,6 @@ begin
         return (f_land(x + h) - f_land(x - h)) / (2.0 * h)
     end
 end
-
-# ╔═╡ c4a00006-0000-4000-8000-000000000006
-md"""
-start x = $(@bind x0i Slider(-25:1:25, show_value=true, default=-18)) ÷10
-
-learning rate = $(@bind lri Slider(1:1:60, show_value=true, default=12)) ÷1000
-
-steps = $(@bind nsteps Slider(0:1:80, show_value=true, default=30))
-"""
 
 # ╔═╡ c4a00007-0000-4000-8000-000000000007
 let
@@ -124,29 +147,6 @@ let
     watch it overshoot and fly apart -- the step size matters as much as the direction.
     """
 end
-
-# ╔═╡ c4a00009-0000-4000-8000-000000000009
-md"""
-## Why this scales
-
-In one dimension you could just look at the graph. The power of gradient descent is that
-the *exact same loop* — evaluate the slope, step downhill — works in millions of
-dimensions, where you could never plot anything. That is how neural networks with
-billions of parameters are trained: follow the gradient, one small step at a time.
-
-The two dials you played with here are the two that matter everywhere: **where you
-start** (initialization) and **how big a step you take** (the learning rate).
-"""
-
-# ╔═╡ c4a0000a-0000-4000-8000-000000000010
-md"""
-## Appendix
-
-The MIT lecture reaches for `ForwardDiff.jl` / `Optim.jl` / `JuMP`. WebAssembly can't run
-those in the browser, so we compute the slope with a one-line **finite difference** and
-draw with **WasmMakie**. The algorithm — and the lessons about learning rate and local
-minima — are exactly the same.
-"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
