@@ -88,7 +88,7 @@ path = let
         xs[i + 1] = pos
     end
     xs
-end
+end;
 
 # ╔═╡ b1a00008-0000-4000-8000-000000000008
 let
@@ -207,7 +207,7 @@ rw_stats = let
     sd = sqrt(var)
     expected = sqrt(Float64(nsteps))
     (floor(m * 100.0) / 100.0, floor(sd * 100.0) / 100.0, floor(expected * 100.0) / 100.0)
-end
+end;
 
 # ╔═╡ b1a00016-0000-4000-8000-000000000016
 md"""**Across $(nwalks) walks:** mean final position is about **$(rw_stats[1])**,
