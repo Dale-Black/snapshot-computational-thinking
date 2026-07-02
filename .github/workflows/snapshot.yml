@@ -85,15 +85,14 @@ jobs:
       # skip Julia entirely (no instantiate, no compile). Only CHANGED notebooks pay
       # the compile cost; everything else is a seconds-long restore.
       - id: keys
-        name: Compute cache key parts (engine SHAs)
+        name: Compute cache key parts (WasmTarget SHA)
         run: |
           echo "wt=$(git -C WasmTarget.jl rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          echo "engine=$(git -C Snapshot.jl rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - id: cache
         uses: actions/cache@v4
         with:
           path: _stage/${{ matrix.nb.slug }}
-          key: snap-nb-v2-${{ matrix.nb.slug }}-${{ hashFiles(format('repo/{0}', matrix.nb.notebook)) }}-wt${{ steps.keys.outputs.wt }}-pi${{ steps.keys.outputs.engine }}-${{ env.SNAPSHOT_OPTIMIZE }}
+          key: snap-nb-v3-${{ matrix.nb.slug }}-${{ hashFiles(format('repo/{0}', matrix.nb.notebook)) }}-wt${{ steps.keys.outputs.wt }}-eng${{ hashFiles('Snapshot.jl/src/**', 'Snapshot.jl/assets/**', 'Snapshot.jl/Project.toml') }}-${{ env.SNAPSHOT_OPTIMIZE }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: julia-actions/setup-julia@v2
         with: { version: "1.12" }
