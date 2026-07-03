@@ -3,6 +3,11 @@ on:
   push:
     branches: [main, master]
   workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-export every notebook (ignore all export caches)"
+        type: boolean
+        default: false
 permissions:
   contents: read
   id-token: write
@@ -16,6 +21,7 @@ env:
   BINARYEN_VERSION: version_125
   WASMTOOLS_VERSION: 1.244.0
   SNAPSHOT_OPTIMIZE: size
+  SNAPSHOT_ORACLE_SAMPLES: "5"
   SNAPSHOT_INGEST_URL: https://snapshot.show
 
 # Build model (general, one-size-fits-most):
@@ -79,20 +85,28 @@ jobs:
         with: { repository: GroupTherapyOrg/WasmTarget.jl, ref: "${{ env.SNAPSHOT_WT_REF }}", path: WasmTarget.jl }
       - uses: actions/checkout@v4
         with: { repository: GroupTherapyOrg/Snapshot.jl, ref: "${{ env.SNAPSHOT_ENGINE_REF }}", path: Snapshot.jl }
-      # ── per-notebook export cache: key = notebook source hash + the engine
-      # commit SHAs + optimize level. A cache HIT means this notebook's source AND
-      # the compiler are unchanged since it was last built → restore its <slug>/ and
-      # skip Julia entirely (no instantiate, no compile). Only CHANGED notebooks pay
-      # the compile cost; everything else is a seconds-long restore.
+      # ── per-notebook export cache: key = notebook source hash + engine content +
+      # WasmTarget SHA + every knob that changes the compiled output (optimize level,
+      # oracle depth, Binaryen/wasm-tools versions). A cache HIT means NOTHING that
+      # affects this notebook's export changed since it was last built → restore its
+      # <slug>/ and skip Julia entirely. Only CHANGED notebooks pay the compile cost.
+      # OVERRIDES (skip the cache → always re-export):
+      #   • snapshot.toml `cache = false` (top-level: all notebooks; or per-[[notebooks]])
+      #   • manual run with the "force" checkbox (Actions → Run workflow)
+      # (Custom build.sh / app builds never use this cache — they always run in full.)
       - id: keys
         name: Compute cache key parts (WasmTarget SHA)
         run: |
           echo "wt=$(git -C WasmTarget.jl rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - id: cache
+        if: matrix.nb.cache != false && inputs.force != true
         uses: actions/cache@v4
         with:
           path: _stage/${{ matrix.nb.slug }}
-          key: snap-nb-v3-${{ matrix.nb.slug }}-${{ hashFiles(format('repo/{0}', matrix.nb.notebook)) }}-wt${{ steps.keys.outputs.wt }}-eng${{ hashFiles('Snapshot.jl/src/**', 'Snapshot.jl/assets/**', 'Snapshot.jl/Project.toml') }}-${{ env.SNAPSHOT_OPTIMIZE }}
+          # v4: + oracle depth + Binaryen/wasm-tools versions (all affect the emitted
+          # wasm/verification). Engine-CONTENT hash (not commit SHA) so an engine
+          # docs-only push doesn't bust every tenant's notebook cache.
+          key: snap-nb-v4-${{ matrix.nb.slug }}-${{ hashFiles(format('repo/{0}', matrix.nb.notebook)) }}-wt${{ steps.keys.outputs.wt }}-eng${{ hashFiles('Snapshot.jl/src/**', 'Snapshot.jl/assets/**', 'Snapshot.jl/Project.toml') }}-${{ env.SNAPSHOT_OPTIMIZE }}-o${{ env.SNAPSHOT_ORACLE_SAMPLES }}-b${{ env.BINARYEN_VERSION }}-t${{ env.WASMTOOLS_VERSION }}
       - if: steps.cache.outputs.cache-hit != 'true'
         uses: julia-actions/setup-julia@v2
         with: { version: "1.12" }
@@ -123,7 +137,17 @@ jobs:
         name: Export ${{ matrix.nb.slug }}
         run: julia --project=Snapshot.jl export.jl one repo _stage "${{ matrix.nb.slug }}" "${{ matrix.nb.notebook }}"
       - name: Cache status
-        run: echo "${{ matrix.nb.slug }} cache-hit=${{ steps.cache.outputs.cache-hit || 'false' }}"
+        run: |
+          hit="${{ steps.cache.outputs.cache-hit || 'false' }}"
+          why=""
+          [ "${{ matrix.nb.cache }}" = "false" ] && why=" (snapshot.toml cache=false)"
+          [ "${{ inputs.force }}" = "true" ] && why=" (forced re-export)"
+          if [ "$hit" = "true" ]; then
+            echo "♻️  \`${{ matrix.nb.slug }}\` — unchanged, reused cached export" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "🔨 \`${{ matrix.nb.slug }}\` — exported$why" >> "$GITHUB_STEP_SUMMARY"
+          fi
+          echo "${{ matrix.nb.slug }} cache-hit=$hit$why"
       - uses: actions/upload-artifact@v4
         with:
           name: nb-${{ matrix.nb.slug }}
@@ -166,6 +190,12 @@ jobs:
           ( cd _stage && zip -qr "$GITHUB_WORKSPACE/site.zip" . )
           ls -la site.zip
       - name: Attest build provenance
+        # GitHub's provenance attestation isn't available for user-owned PRIVATE
+        # repos, so it errors there and would sink the publish. Skip it for private
+        # repos (Snapshot sends its own sha256(site.zip) digest at publish anyway);
+        # continue-on-error keeps a transient public-repo hiccup non-fatal too.
+        if: ${{ github.event.repository.private != true }}
+        continue-on-error: true
         uses: actions/attest-build-provenance@v2
         with: { subject-path: "site.zip" }
       - name: Publish site to Snapshot (OIDC)
@@ -236,6 +266,12 @@ jobs:
           ( cd _stage && zip -qr "$GITHUB_WORKSPACE/site.zip" . )
           ls -la site.zip
       - name: Attest build provenance
+        # GitHub's provenance attestation isn't available for user-owned PRIVATE
+        # repos, so it errors there and would sink the publish. Skip it for private
+        # repos (Snapshot sends its own sha256(site.zip) digest at publish anyway);
+        # continue-on-error keeps a transient public-repo hiccup non-fatal too.
+        if: ${{ github.event.repository.private != true }}
+        continue-on-error: true
         uses: actions/attest-build-provenance@v2
         with: { subject-path: "site.zip" }
       - name: Publish site to Snapshot (OIDC)
