@@ -63,9 +63,9 @@ jobs:
         run: julia --project=Snapshot.jl -e 'using Pkg; Pkg.Registry.add("General"); Pkg.instantiate(); using Snapshot'
       - name: Fetch Snapshot driver + collection builder
         run: |
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/export.jl" -o export.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/collection.jl" -o collection.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/upload.mjs" -o upload.mjs
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_EXPORT_SHA256}/export.jl" -o export.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_COLLECTION_SHA256}/collection.jl" -o collection.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_UPLOAD_SHA256}/upload.mjs" -o upload.mjs
           echo "${SNAPSHOT_EXPORT_SHA256}  export.jl" | sha256sum -c -
           echo "${SNAPSHOT_COLLECTION_SHA256}  collection.jl" | sha256sum -c -
           echo "${SNAPSHOT_UPLOAD_SHA256}  upload.mjs" | sha256sum -c -
@@ -145,8 +145,8 @@ jobs:
       - if: steps.cache.outputs.cache-hit != 'true'
         name: Fetch Snapshot driver + collection builder
         run: |
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/export.jl" -o export.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/collection.jl" -o collection.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_EXPORT_SHA256}/export.jl" -o export.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_COLLECTION_SHA256}/collection.jl" -o collection.jl
           echo "${SNAPSHOT_EXPORT_SHA256}  export.jl" | sha256sum -c -
           echo "${SNAPSHOT_COLLECTION_SHA256}  collection.jl" | sha256sum -c -
       - if: steps.cache.outputs.cache-hit != 'true'
@@ -191,9 +191,9 @@ jobs:
         run: julia --project=Snapshot.jl -e 'using Pkg; Pkg.instantiate()'
       - name: Fetch Snapshot driver + collection builder
         run: |
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/export.jl" -o export.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/collection.jl" -o collection.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/upload.mjs" -o upload.mjs
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_EXPORT_SHA256}/export.jl" -o export.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_COLLECTION_SHA256}/collection.jl" -o collection.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_UPLOAD_SHA256}/upload.mjs" -o upload.mjs
           echo "${SNAPSHOT_EXPORT_SHA256}  export.jl" | sha256sum -c -
           echo "${SNAPSHOT_COLLECTION_SHA256}  collection.jl" | sha256sum -c -
           echo "${SNAPSHOT_UPLOAD_SHA256}  upload.mjs" | sha256sum -c -
@@ -261,9 +261,9 @@ jobs:
         run: julia --project=Snapshot.jl -e 'using Pkg; Pkg.instantiate()'
       - name: Fetch Snapshot driver + collection builder
         run: |
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/export.jl" -o export.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/collection.jl" -o collection.jl
-          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/upload.mjs" -o upload.mjs
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_EXPORT_SHA256}/export.jl" -o export.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_COLLECTION_SHA256}/collection.jl" -o collection.jl
+          curl -fsSL "${SNAPSHOT_INGEST_URL%/}/ci/sha256/${SNAPSHOT_UPLOAD_SHA256}/upload.mjs" -o upload.mjs
           echo "${SNAPSHOT_EXPORT_SHA256}  export.jl" | sha256sum -c -
           echo "${SNAPSHOT_COLLECTION_SHA256}  collection.jl" | sha256sum -c -
           echo "${SNAPSHOT_UPLOAD_SHA256}  upload.mjs" | sha256sum -c -
