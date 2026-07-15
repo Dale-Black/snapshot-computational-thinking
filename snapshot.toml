@@ -1,6 +1,6 @@
 title = "Computational Thinking"
 type  = "collection"
-theme = "snapshot"
+theme = "fun-light"
 home  = "index.jl"
 
 # Folders = modules. Each [[modules]] block names a top-level subfolder and its
