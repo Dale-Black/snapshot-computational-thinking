@@ -228,11 +228,11 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 WasmMakie = "782397d3-b2e0-4093-86f4-3070b4a5c6bd"
 
 [sources]
-WasmMakie = {url = "https://github.com/GroupTherapyOrg/WasmMakie.jl"}
+WasmMakie = {rev = "v0.1.3", url = "https://github.com/GroupTherapyOrg/WasmMakie.jl"}
 
 [compat]
 PlutoUI = "~0.7.83"
-WasmMakie = "~0.1.0"
+WasmMakie = "~0.1.3"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -241,7 +241,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.12.6"
 manifest_format = "2.0"
-project_hash = "528a15ccaaea2a8f2cfb8a3b8ef12bd3bc6e7ee4"
+project_hash = "ed96a65ac2ea39ef97240be43398759a5bb5caed"
 
 [[deps.AbstractPlutoDingetjes]]
 git-tree-sha1 = "6c3913f4e9bdf6ba3c08041a446fb1332716cbc2"
@@ -450,10 +450,11 @@ version = "1.11.0"
 
 [[deps.WasmMakie]]
 deps = ["Base64"]
-git-tree-sha1 = "de6c9a45585e892ac96fa7ad9fd3b1d3d61277ec"
+git-tree-sha1 = "7fe9806ba609b6aca12d7a2ecb30071efa4fc221"
+repo-rev = "v0.1.3"
 repo-url = "https://github.com/GroupTherapyOrg/WasmMakie.jl"
 uuid = "782397d3-b2e0-4093-86f4-3070b4a5c6bd"
-version = "0.1.0"
+version = "0.1.3"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
